@@ -76,13 +76,16 @@ export default function SnakeGame() {
   useEffect(() => {
     function resize() {
       if (!containerRef.current) return;
+      // Use the container width, capped at 480px for a clean fit
       const w = containerRef.current.clientWidth;
-      const cs = Math.floor(Math.min(w, 520) / GRID_SIZE);
+      const maxCanvas = Math.min(w, 480);
+      const cs = Math.floor(maxCanvas / GRID_SIZE);
       setCellSize(cs);
     }
     resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    const ro = new ResizeObserver(resize);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, []);
 
   const draw = useCallback(() => {
@@ -95,9 +98,11 @@ export default function SnakeGame() {
     canvas.width = size;
     canvas.height = size;
 
+    // Background
     ctx.fillStyle = "#0a0a0a";
     ctx.fillRect(0, 0, size, size);
 
+    // Grid
     ctx.strokeStyle = "rgba(255,255,255,0.02)";
     ctx.lineWidth = 1;
     for (let i = 0; i <= GRID_SIZE; i++) {
@@ -111,6 +116,7 @@ export default function SnakeGame() {
       ctx.stroke();
     }
 
+    // Food
     const food = foodRef.current;
     const fc = food.x * cellSize;
     const fr = food.y * cellSize;
@@ -123,6 +129,7 @@ export default function SnakeGame() {
     roundRect(ctx, fc + fp, fr + fp, cellSize - fp * 2, cellSize - fp * 2, fr2);
     ctx.shadowBlur = 0;
 
+    // Snake
     snakeRef.current.forEach((seg, i) => {
       const x = seg.x * cellSize;
       const y = seg.y * cellSize;
@@ -141,6 +148,7 @@ export default function SnakeGame() {
     });
     ctx.shadowBlur = 0;
 
+    // Eyes
     if (snakeRef.current.length > 0) {
       const hx = snakeRef.current[0].x * cellSize;
       const hy = snakeRef.current[0].y * cellSize;
@@ -250,11 +258,11 @@ export default function SnakeGame() {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key))
         e.preventDefault();
 
       if (gameStateRef.current === "idle" || gameStateRef.current === "gameover") {
-        if (["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"]
+        if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"]
           .includes(e.key.toLowerCase())) {
           startGame();
           return;
@@ -323,11 +331,12 @@ export default function SnakeGame() {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start">
-      {/* Score sidebar */}
-      <div className="w-full lg:w-[10%] lg:min-w-[140px] flex lg:flex-col gap-4 lg:gap-6
-                      lg:sticky lg:top-24 shrink-0">
-        {/* Score */}
+    // Outer: row on lg, column on mobile
+    <div className="flex flex-col lg:flex-row gap-6 items-start w-full pb-10">
+
+      {/* ── Sidebar ── */}
+      <div className="w-full lg:w-36 shrink-0 flex flex-row lg:flex-col gap-3">
+
         <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Score
@@ -335,7 +344,6 @@ export default function SnakeGame() {
           <div className="font-cormorant text-3xl text-primary">{score}</div>
         </div>
 
-        {/* Best */}
         <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Best
@@ -345,7 +353,6 @@ export default function SnakeGame() {
           </div>
         </div>
 
-        {/* Speed */}
         {gameState === "running" && (
           <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
             <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
@@ -361,7 +368,6 @@ export default function SnakeGame() {
           </div>
         )}
 
-        {/* Status */}
         <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-2">
             Status
@@ -381,12 +387,13 @@ export default function SnakeGame() {
         </div>
       </div>
 
-      {/* Game area */}
-      <div className="flex-1 flex flex-col items-center gap-4 w-full lg:w-[90%]">
-        {/* Canvas */}
+      {/* ── Game area ── */}
+      <div className="flex flex-col items-center gap-4 w-full">
+
+        {/* Canvas wrapper — drives its own size */}
         <div
           ref={containerRef}
-          className="relative w-full max-w-[520px]"
+          className="relative w-full max-w-[480px]"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -395,7 +402,7 @@ export default function SnakeGame() {
             width={canvasSize}
             height={canvasSize}
             className="w-full block rounded-xl border border-white/[0.06]"
-            style={{ aspectRatio: "1/1" }}
+            style={{ aspectRatio: "1 / 1" }}
           />
 
           <AnimatePresence>
@@ -452,9 +459,7 @@ export default function SnakeGame() {
                        flex items-center justify-center text-muted
                        hover:text-accent hover:border-accent/20 transition-colors
                        active:scale-95 cursor-pointer"
-          >
-            ▲
-          </button>
+          >▲</button>
           <div className="flex gap-1">
             <button
               onClick={() => mobileDir("LEFT")}
@@ -462,9 +467,7 @@ export default function SnakeGame() {
                          flex items-center justify-center text-muted
                          hover:text-accent hover:border-accent/20 transition-colors
                          active:scale-95 cursor-pointer"
-            >
-              ◀
-            </button>
+            >◀</button>
             <div className="w-12 h-12" />
             <button
               onClick={() => mobileDir("RIGHT")}
@@ -472,9 +475,7 @@ export default function SnakeGame() {
                          flex items-center justify-center text-muted
                          hover:text-accent hover:border-accent/20 transition-colors
                          active:scale-95 cursor-pointer"
-            >
-              ▶
-            </button>
+            >▶</button>
           </div>
           <button
             onClick={() => mobileDir("DOWN")}
@@ -482,9 +483,7 @@ export default function SnakeGame() {
                        flex items-center justify-center text-muted
                        hover:text-accent hover:border-accent/20 transition-colors
                        active:scale-95 cursor-pointer"
-          >
-            ▼
-          </button>
+          >▼</button>
         </div>
       </div>
     </div>

@@ -11,16 +11,16 @@ interface GameLayoutProps {
 
 export default function GameLayout({ children, title, controls }: GameLayoutProps) {
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <main className="flex-1 pt-16 overflow-y-auto lg:overflow-hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 h-full flex flex-col">
+      <main className="flex-1 pt-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-6 shrink-0"
+            className="mb-6"
           >
             <h1 className="font-cormorant text-4xl sm:text-5xl font-light text-primary mb-3">
               {title}
@@ -29,11 +29,9 @@ export default function GameLayout({ children, title, controls }: GameLayoutProp
               {controls.map((ctrl) => (
                 <div
                   key={ctrl.key}
-                  className="flex items-center gap-2 bg-card border border-white/[0.06]
-                             rounded-lg px-2.5 py-1"
+                  className="flex items-center gap-2 bg-card border border-white/[0.06] rounded-lg px-2.5 py-1"
                 >
-                  <kbd className="font-inter text-[10px] font-medium text-accent
-                                  bg-accent/10 rounded px-1.5 py-0.5">
+                  <kbd className="font-inter text-[10px] font-medium text-accent bg-accent/10 rounded px-1.5 py-0.5">
                     {ctrl.key}
                   </kbd>
                   <span className="font-inter text-[11px] text-muted">
@@ -44,12 +42,11 @@ export default function GameLayout({ children, title, controls }: GameLayoutProp
             </div>
           </motion.div>
 
-          {/* Game content — fills remaining space */}
+          {/* Game content */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="flex-1 min-h-0"
           >
             {children}
           </motion.div>
