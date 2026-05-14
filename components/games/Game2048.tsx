@@ -1,3 +1,4 @@
+// components/Game2048.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -10,16 +11,16 @@ type MoveDir = "UP" | "DOWN" | "LEFT" | "RIGHT";
 const BOARD_SIZE = 4;
 
 const TILE_STYLES: Record<number, { bg: string; color: string }> = {
-  0:    { bg: "rgba(255,255,255,0.03)", color: "transparent" },
-  2:    { bg: "#1a1a1a", color: "#e7e7e7" },
-  4:    { bg: "#1e1e1e", color: "#e7e7e7" },
-  8:    { bg: "#3d2b1a", color: "#e7e7e7" },
-  16:   { bg: "#4a2e12", color: "#e7e7e7" },
-  32:   { bg: "#6b3a10", color: "#e7e7e7" },
-  64:   { bg: "#8a4510", color: "#ffffff" },
-  128:  { bg: "#a05a1a", color: "#ffffff" },
-  256:  { bg: "#b87030", color: "#ffffff" },
-  512:  { bg: "#c8853f", color: "#0a0a0a" },
+  0: { bg: "rgba(255,255,255,0.03)", color: "transparent" },
+  2: { bg: "#1a1a1a", color: "#e7e7e7" },
+  4: { bg: "#1e1e1e", color: "#e7e7e7" },
+  8: { bg: "#3d2b1a", color: "#e7e7e7" },
+  16: { bg: "#4a2e12", color: "#e7e7e7" },
+  32: { bg: "#6b3a10", color: "#e7e7e7" },
+  64: { bg: "#8a4510", color: "#ffffff" },
+  128: { bg: "#a05a1a", color: "#ffffff" },
+  256: { bg: "#b87030", color: "#ffffff" },
+  512: { bg: "#c8853f", color: "#0a0a0a" },
   1024: { bg: "#d49a50", color: "#0a0a0a" },
   2048: { bg: "#C8A97E", color: "#0a0a0a" },
 };
@@ -35,7 +36,9 @@ function emptyBoard(): Board {
 function addRandomTile(board: Board): Board {
   const empty: [number, number][] = [];
   board.forEach((row, r) =>
-    row.forEach((val, c) => { if (val === 0) empty.push([r, c]); })
+    row.forEach((val, c) => {
+      if (val === 0) empty.push([r, c]);
+    })
   );
   if (empty.length === 0) return board;
   const [r, c] = empty[Math.floor(Math.random() * empty.length)];
@@ -68,12 +71,17 @@ function slideRow(row: number[]): { row: number[]; score: number } {
   return { row: merged, score };
 }
 
-function move(board: Board, dir: MoveDir): { board: Board; score: number; moved: boolean } {
+function move(
+  board: Board,
+  dir: MoveDir
+): { board: Board; score: number; moved: boolean } {
   let totalScore = 0;
   let moved = false;
 
-  const rotR = (b: Board): Board => b[0].map((_, ci) => b.map((row) => row[ci]).reverse());
-  const rotL = (b: Board): Board => b[0].map((_, ci) => b.map((row) => row[row.length - 1 - ci]));
+  const rotR = (b: Board): Board =>
+    b[0].map((_, ci) => b.map((row) => row[ci]).reverse());
+  const rotL = (b: Board): Board =>
+    b[0].map((_, ci) => b.map((row) => row[row.length - 1 - ci]));
 
   let work = board.map((r) => [...r]);
   if (dir === "RIGHT") work = work.map((r) => [...r].reverse());
@@ -112,7 +120,11 @@ function canMove(board: Board) {
 
 function getMaxTile(board: Board): number {
   let max = 0;
-  board.forEach((row) => row.forEach((v) => { if (v > max) max = v; }));
+  board.forEach((row) =>
+    row.forEach((v) => {
+      if (v > max) max = v;
+    })
+  );
   return max;
 }
 
@@ -124,18 +136,36 @@ export default function Game2048() {
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
   const [continueAfterWin, setContinueAfterWin] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const boardRef = useRef(board);
   boardRef.current = board;
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setHighScore(getScore("2048").highScore);
   }, []);
 
+  // Prevent page scroll when touching the game area
+  useEffect(() => {
+    const el = gameAreaRef.current;
+    if (!el) return;
+
+    const preventScroll = (e: TouchEvent) => {
+      if (isPlaying || (!gameOver && !won)) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener("touchmove", preventScroll, { passive: false });
+    return () => el.removeEventListener("touchmove", preventScroll);
+  }, [isPlaying, gameOver, won]);
+
   const handleMove = useCallback(
     (dir: MoveDir) => {
       if (gameOver || (won && !continueAfterWin)) return;
+      if (!isPlaying) setIsPlaying(true);
       const result = move(boardRef.current, dir);
       if (!result.moved) return;
 
@@ -154,9 +184,12 @@ export default function Game2048() {
       });
 
       if (!won && hasWon(newBoard)) setWon(true);
-      if (!canMove(newBoard)) setGameOver(true);
+      if (!canMove(newBoard)) {
+        setGameOver(true);
+        setIsPlaying(false);
+      }
     },
-    [gameOver, won, continueAfterWin]
+    [gameOver, won, continueAfterWin, isPlaying]
   );
 
   const newGame = () => {
@@ -166,25 +199,40 @@ export default function Game2048() {
     setGameOver(false);
     setWon(false);
     setContinueAfterWin(false);
+    setIsPlaying(false);
   };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const map: Record<string, MoveDir> = {
-        ArrowUp: "UP", w: "UP", W: "UP",
-        ArrowDown: "DOWN", s: "DOWN", S: "DOWN",
-        ArrowLeft: "LEFT", a: "LEFT", A: "LEFT",
-        ArrowRight: "RIGHT", d: "RIGHT", D: "RIGHT",
+        ArrowUp: "UP",
+        w: "UP",
+        W: "UP",
+        ArrowDown: "DOWN",
+        s: "DOWN",
+        S: "DOWN",
+        ArrowLeft: "LEFT",
+        a: "LEFT",
+        A: "LEFT",
+        ArrowRight: "RIGHT",
+        d: "RIGHT",
+        D: "RIGHT",
       };
       const dir = map[e.key];
-      if (dir) { e.preventDefault(); handleMove(dir); }
+      if (dir) {
+        e.preventDefault();
+        handleMove(dir);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleMove]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -192,22 +240,31 @@ export default function Game2048() {
     const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
     const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
     touchStartRef.current = null;
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-    const dir: MoveDir = Math.abs(dx) > Math.abs(dy)
-      ? dx > 0 ? "RIGHT" : "LEFT"
-      : dy > 0 ? "DOWN" : "UP";
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+    const dir: MoveDir =
+      Math.abs(dx) > Math.abs(dy)
+        ? dx > 0
+          ? "RIGHT"
+          : "LEFT"
+        : dy > 0
+        ? "DOWN"
+        : "UP";
     handleMove(dir);
   };
 
   const maxTile = getMaxTile(board);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start select-none">
-      {/* Score sidebar */}
-      <div className="w-full lg:w-[10%] lg:min-w-[140px] flex lg:flex-col gap-3 lg:gap-4
-                      lg:sticky lg:top-24 shrink-0">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start select-none">
+      {/* Score bar - compact row on mobile when playing, sidebar on desktop */}
+      <div
+        className={`w-full lg:w-[10%] lg:min-w-[140px] flex lg:flex-col gap-2 lg:gap-4
+                    lg:sticky lg:top-24 shrink-0 ${
+                      isPlaying ? "flex-row flex-wrap sm:flex-nowrap" : ""
+                    }`}
+      >
         {/* Score */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        <div className="bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none min-w-0">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Score
           </div>
@@ -215,44 +272,54 @@ export default function Game2048() {
             key={score}
             initial={{ y: -4, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="font-cormorant text-3xl text-primary"
+            className="font-cormorant text-2xl lg:text-3xl text-primary"
           >
             {score.toLocaleString()}
           </motion.div>
         </div>
 
         {/* Best */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        <div className="bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none min-w-0">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Best
           </div>
-          <div className="font-cormorant text-3xl text-accent">
+          <div className="font-cormorant text-2xl lg:text-3xl text-accent">
             {highScore.toLocaleString()}
           </div>
         </div>
 
-        {/* Max tile */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        {/* Max tile - hide on mobile when playing */}
+        <div
+          className={`bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none min-w-0 ${
+            isPlaying ? "hidden sm:block" : ""
+          }`}
+        >
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Max Tile
           </div>
-          <div className="font-cormorant text-3xl text-accent">
+          <div className="font-cormorant text-2xl lg:text-3xl text-accent">
             {maxTile || "—"}
           </div>
         </div>
 
-        {/* Moves */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        {/* Moves - hide on mobile when playing */}
+        <div
+          className={`bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none min-w-0 ${
+            isPlaying ? "hidden sm:block" : ""
+          }`}
+        >
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Moves
           </div>
-          <div className="font-cormorant text-3xl text-primary">{moves}</div>
+          <div className="font-cormorant text-2xl lg:text-3xl text-primary">
+            {moves}
+          </div>
         </div>
 
         {/* New game button */}
         <button
           onClick={newGame}
-          className="bg-card border border-white/[0.06] rounded-xl px-4 py-3
+          className="bg-card border border-white/[0.06] rounded-xl px-3 lg:px-4 py-2 lg:py-3
                      font-inter text-xs text-muted hover:text-primary
                      hover:border-accent/20 transition-all cursor-pointer
                      flex-1 lg:flex-none"
@@ -265,7 +332,8 @@ export default function Game2048() {
       <div className="flex-1 flex flex-col items-center gap-4 w-full lg:w-[90%]">
         {/* Board */}
         <div
-          className="relative w-full max-w-[420px]"
+          ref={gameAreaRef}
+          className="relative w-full max-w-[420px] touch-none"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -274,9 +342,7 @@ export default function Game2048() {
             style={{ gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)` }}
           >
             {board.map((row, r) =>
-              row.map((val, c) => (
-                <Tile key={`${r}-${c}`} value={val} />
-              ))
+              row.map((val, c) => <Tile key={`${r}-${c}`} value={val} />)
             )}
           </div>
 
@@ -290,7 +356,10 @@ export default function Game2048() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 rounded-2xl flex flex-col items-center
                            justify-center text-center p-6"
-                style={{ background: "rgba(10,10,10,0.9)", backdropFilter: "blur(4px)" }}
+                style={{
+                  background: "rgba(10,10,10,0.9)",
+                  backdropFilter: "blur(4px)",
+                }}
               >
                 <p className="font-inter text-[11px] text-accent uppercase tracking-[0.2em] mb-2">
                   You reached
@@ -303,7 +372,10 @@ export default function Game2048() {
                 </p>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setContinueAfterWin(true)}
+                    onClick={() => {
+                      setContinueAfterWin(true);
+                      setIsPlaying(true);
+                    }}
                     className="px-6 py-2.5 bg-accent text-background font-inter text-sm
                                font-medium rounded-lg hover:bg-accent/90 transition-colors
                                cursor-pointer"
@@ -330,7 +402,10 @@ export default function Game2048() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 rounded-2xl flex flex-col items-center
                            justify-center text-center p-6"
-                style={{ background: "rgba(10,10,10,0.9)", backdropFilter: "blur(4px)" }}
+                style={{
+                  background: "rgba(10,10,10,0.9)",
+                  backdropFilter: "blur(4px)",
+                }}
               >
                 <p className="font-inter text-[11px] text-muted uppercase tracking-[0.2em] mb-3">
                   Game Over
@@ -356,7 +431,11 @@ export default function Game2048() {
           </AnimatePresence>
         </div>
 
-        <p className="font-inter text-xs text-muted/50 text-center max-w-[300px]">
+        <p
+          className={`font-inter text-xs text-muted/50 text-center max-w-[300px] ${
+            isPlaying ? "hidden sm:block" : ""
+          }`}
+        >
           Arrow keys or swipe to slide. Merge matching numbers to reach 2048.
         </p>
       </div>
@@ -366,7 +445,8 @@ export default function Game2048() {
 
 function Tile({ value }: { value: number }) {
   const style = getTileStyle(value);
-  const fontSize = value >= 1024 ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl";
+  const fontSize =
+    value >= 1024 ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl";
 
   return (
     <motion.div
@@ -378,12 +458,14 @@ function Tile({ value }: { value: number }) {
       style={{
         backgroundColor: style.bg,
         color: style.color,
-        border: value === 0 ? "1px solid rgba(255,255,255,0.03)" : "none",
-        boxShadow: value >= 2048
-          ? "0 0 20px rgba(200,169,126,0.3)"
-          : value >= 128
-          ? "0 0 8px rgba(200,169,126,0.1)"
-          : "none",
+        border:
+          value === 0 ? "1px solid rgba(255,255,255,0.03)" : "none",
+        boxShadow:
+          value >= 2048
+            ? "0 0 20px rgba(200,169,126,0.3)"
+            : value >= 128
+            ? "0 0 8px rgba(200,169,126,0.1)"
+            : "none",
       }}
     >
       {value !== 0 ? value : ""}

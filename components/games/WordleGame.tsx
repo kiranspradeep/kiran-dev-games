@@ -1,3 +1,4 @@
+// components/WordleGame.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -21,9 +22,9 @@ const REVEAL_DELAY_PER_TILE = 300;
 const REVEAL_TOTAL_DURATION = WORD_LENGTH * REVEAL_DELAY_PER_TILE + 400;
 
 const KEYBOARD_ROWS = [
-  ["Q","W","E","R","T","Y","U","I","O","P"],
-  ["A","S","D","F","G","H","J","K","L"],
-  ["ENTER","Z","X","C","V","B","N","M","⌫"],
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⌫"],
 ];
 
 const STATE_COLORS: Record<LetterState, string> = {
@@ -73,7 +74,10 @@ function buildKeyboardMap(guesses: Guess[]): Map<string, LetterState> {
   for (const guess of guesses) {
     for (const { char, state } of guess) {
       const existing = map.get(char);
-      if (!existing || priority.indexOf(state) < priority.indexOf(existing)) {
+      if (
+        !existing ||
+        priority.indexOf(state) < priority.indexOf(existing)
+      ) {
         map.set(char, state);
       }
     }
@@ -81,7 +85,14 @@ function buildKeyboardMap(guesses: Guess[]): Map<string, LetterState> {
   return map;
 }
 
-const WIN_MESSAGES = ["Genius!", "Magnificent!", "Impressive!", "Splendid!", "Great!", "Phew!"];
+const WIN_MESSAGES = [
+  "Genius!",
+  "Magnificent!",
+  "Impressive!",
+  "Splendid!",
+  "Great!",
+  "Phew!",
+];
 
 export default function WordleGame() {
   const [mode, setMode] = useState<"daily" | "random">("daily");
@@ -91,13 +102,17 @@ export default function WordleGame() {
   const [phase, setPhase] = useState<GamePhase>("playing");
   const [message, setMessage] = useState("");
   const [invalidShake, setInvalidShake] = useState(false);
-  const [revealingRowIndex, setRevealingRowIndex] = useState<number | null>(null);
+  const [revealingRowIndex, setRevealingRowIndex] = useState<number | null>(
+    null
+  );
   const [pendingReveal, setPendingReveal] = useState<Guess | null>(null);
   const [highScore, setHighScore] = useState(0);
   const [popTile, setPopTile] = useState<number | null>(null);
 
   const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isPlaying = phase === "playing" || phase === "revealing";
 
   useEffect(() => {
     const data = getScore("wordle");
@@ -173,12 +188,15 @@ export default function WordleGame() {
     }, REVEAL_TOTAL_DURATION);
   }, [phase, currentGuess, answer, guesses, showMessage, triggerShake]);
 
-  const addLetter = useCallback((letter: string) => {
-    if (phase !== "playing") return;
-    if (currentGuess.length >= WORD_LENGTH) return;
-    setCurrentGuess((g) => g + letter);
-    triggerPop(currentGuess.length);
-  }, [phase, currentGuess, triggerPop]);
+  const addLetter = useCallback(
+    (letter: string) => {
+      if (phase !== "playing") return;
+      if (currentGuess.length >= WORD_LENGTH) return;
+      setCurrentGuess((g) => g + letter);
+      triggerPop(currentGuess.length);
+    },
+    [phase, currentGuess, triggerPop]
+  );
 
   const removeLetter = useCallback(() => {
     if (phase !== "playing") return;
@@ -186,42 +204,61 @@ export default function WordleGame() {
     setCurrentGuess((g) => g.slice(0, -1));
   }, [phase, currentGuess]);
 
-  const handleKey = useCallback((key: string) => {
-    if (phase === "revealing" || phase === "won" || phase === "lost") return;
-    if (key === "ENTER") { submitGuess(); return; }
-    if (key === "⌫" || key === "BACKSPACE") { removeLetter(); return; }
-    if (/^[A-Z]$/.test(key)) addLetter(key);
-  }, [phase, submitGuess, removeLetter, addLetter]);
+  const handleKey = useCallback(
+    (key: string) => {
+      if (phase === "revealing" || phase === "won" || phase === "lost")
+        return;
+      if (key === "ENTER") {
+        submitGuess();
+        return;
+      }
+      if (key === "⌫" || key === "BACKSPACE") {
+        removeLetter();
+        return;
+      }
+      if (/^[A-Z]$/.test(key)) addLetter(key);
+    },
+    [phase, submitGuess, removeLetter, addLetter]
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === "Enter") { e.preventDefault(); handleKey("ENTER"); }
-      else if (e.key === "Backspace") { e.preventDefault(); handleKey("BACKSPACE"); }
-      else if (/^[a-zA-Z]$/.test(e.key)) { e.preventDefault(); handleKey(e.key.toUpperCase()); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleKey("ENTER");
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        handleKey("BACKSPACE");
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        e.preventDefault();
+        handleKey(e.key.toUpperCase());
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleKey]);
 
-  const newGame = useCallback((m: "daily" | "random") => {
-    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
-    setMode(m);
-    setAnswer(m === "daily" ? getDailyWord() : getRandomWord());
-    setGuesses([]);
-    setCurrentGuess("");
-    setPhase("playing");
-    setMessage("");
-    setRevealingRowIndex(null);
-    setPendingReveal(null);
-    setInvalidShake(false);
-    setPopTile(null);
-  }, []);
+  const newGame = useCallback(
+    (m: "daily" | "random") => {
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+      setMode(m);
+      setAnswer(m === "daily" ? getDailyWord() : getRandomWord());
+      setGuesses([]);
+      setCurrentGuess("");
+      setPhase("playing");
+      setMessage("");
+      setRevealingRowIndex(null);
+      setPendingReveal(null);
+      setInvalidShake(false);
+      setPopTile(null);
+    },
+    []
+  );
 
   const keyMap = buildKeyboardMap(guesses);
 
-  // Build display grid
   const displayGrid: Array<{
     letters: Array<{ char: string; state: LetterState }>;
     isActive: boolean;
@@ -230,10 +267,26 @@ export default function WordleGame() {
 
   for (let i = 0; i < MAX_GUESSES; i++) {
     if (i < guesses.length) {
-      displayGrid.push({ letters: guesses[i], isActive: false, isRevealing: false });
-    } else if (i === guesses.length && pendingReveal && revealingRowIndex === i) {
-      displayGrid.push({ letters: pendingReveal, isActive: false, isRevealing: true });
-    } else if (i === guesses.length && !pendingReveal && (phase === "playing" || phase === "revealing")) {
+      displayGrid.push({
+        letters: guesses[i],
+        isActive: false,
+        isRevealing: false,
+      });
+    } else if (
+      i === guesses.length &&
+      pendingReveal &&
+      revealingRowIndex === i
+    ) {
+      displayGrid.push({
+        letters: pendingReveal,
+        isActive: false,
+        isRevealing: true,
+      });
+    } else if (
+      i === guesses.length &&
+      !pendingReveal &&
+      (phase === "playing" || phase === "revealing")
+    ) {
       const letters = Array.from({ length: WORD_LENGTH }, (_, ci) => ({
         char: currentGuess[ci] ?? "",
         state: (currentGuess[ci] ? "tbd" : "empty") as LetterState,
@@ -241,15 +294,18 @@ export default function WordleGame() {
       displayGrid.push({ letters, isActive: true, isRevealing: false });
     } else {
       displayGrid.push({
-        letters: Array.from({ length: WORD_LENGTH }, () => ({ char: "", state: "empty" as LetterState })),
-        isActive: false, isRevealing: false,
+        letters: Array.from({ length: WORD_LENGTH }, () => ({
+          char: "",
+          state: "empty" as LetterState,
+        })),
+        isActive: false,
+        isRevealing: false,
       });
     }
   }
 
   const isGameOver = phase === "won" || phase === "lost";
 
-  // Count correct/present/absent in all guesses for sidebar stats
   let correctCount = 0;
   let presentCount = 0;
   let absentCount = 0;
@@ -262,12 +318,14 @@ export default function WordleGame() {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start select-none">
-      {/* Score sidebar */}
-      <div className="w-full lg:w-[10%] lg:min-w-[140px] flex lg:flex-col gap-3 lg:gap-4
-                      lg:sticky lg:top-24 shrink-0">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start select-none">
+      {/* Score sidebar - compact on mobile when playing */}
+      <div
+        className={`w-full lg:w-[10%] lg:min-w-[140px] flex lg:flex-col gap-2 lg:gap-4
+                    lg:sticky lg:top-24 shrink-0`}
+      >
         {/* Mode */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        <div className="bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-2">
             Mode
           </div>
@@ -276,11 +334,12 @@ export default function WordleGame() {
               <button
                 key={m}
                 onClick={() => newGame(m)}
-                className={`px-3 py-1 rounded-md font-inter text-[10px] capitalize
+                className={`px-2 lg:px-3 py-1 rounded-md font-inter text-[10px] capitalize
                            transition-all cursor-pointer
-                           ${mode === m
-                             ? "bg-accent/10 text-accent border border-accent/20"
-                             : "text-muted hover:text-primary border border-transparent"
+                           ${
+                             mode === m
+                               ? "bg-accent/10 text-accent border border-accent/20"
+                               : "text-muted hover:text-primary border border-transparent"
                            }`}
               >
                 {m}
@@ -290,48 +349,74 @@ export default function WordleGame() {
         </div>
 
         {/* Guesses */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        <div className="bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none">
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Guesses
           </div>
-          <div className="font-cormorant text-3xl text-primary">
-            {guesses.length}<span className="text-muted text-lg">/{MAX_GUESSES}</span>
+          <div className="font-cormorant text-2xl lg:text-3xl text-primary">
+            {guesses.length}
+            <span className="text-muted text-base lg:text-lg">
+              /{MAX_GUESSES}
+            </span>
           </div>
         </div>
 
-        {/* Best score */}
-        <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+        {/* Best score - hide on mobile when playing */}
+        <div
+          className={`bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none ${
+            isPlaying ? "hidden sm:block" : ""
+          }`}
+        >
           <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-1">
             Best
           </div>
-          <div className="font-cormorant text-3xl text-accent">
+          <div className="font-cormorant text-2xl lg:text-3xl text-accent">
             {highScore > 0 ? highScore : "—"}
           </div>
         </div>
 
-        {/* Letter stats */}
+        {/* Letter stats - hide on mobile when playing */}
         {guesses.length > 0 && (
-          <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex-1 lg:flex-none">
+          <div
+            className={`bg-card border border-white/[0.06] rounded-xl p-3 lg:p-4 flex-1 lg:flex-none ${
+              isPlaying ? "hidden sm:block" : ""
+            }`}
+          >
             <div className="font-inter text-[10px] text-muted uppercase tracking-widest mb-3">
               Letters
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#2d7a3a" }} />
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: "#2d7a3a" }}
+                />
                 <span className="font-inter text-xs text-muted">
-                  Correct: <span className="text-primary">{correctCount}</span>
+                  Correct:{" "}
+                  <span className="text-primary">{correctCount}</span>
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#8a6e10" }} />
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: "#8a6e10" }}
+                />
                 <span className="font-inter text-xs text-muted">
-                  Present: <span className="text-primary">{presentCount}</span>
+                  Present:{" "}
+                  <span className="text-primary">{presentCount}</span>
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#1e1e1e", border: "1px solid #2a2a2a" }} />
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{
+                    backgroundColor: "#1e1e1e",
+                    border: "1px solid #2a2a2a",
+                  }}
+                />
                 <span className="font-inter text-xs text-muted">
-                  Absent: <span className="text-primary">{absentCount}</span>
+                  Absent:{" "}
+                  <span className="text-primary">{absentCount}</span>
                 </span>
               </div>
             </div>
@@ -340,7 +425,7 @@ export default function WordleGame() {
       </div>
 
       {/* Game area */}
-      <div className="flex-1 flex flex-col items-center gap-4 w-full lg:w-[90%]">
+      <div className="flex-1 flex flex-col items-center gap-3 lg:gap-4 w-full lg:w-[90%]">
         {/* Toast */}
         <div className="h-8 flex items-center justify-center">
           <AnimatePresence mode="wait">
@@ -381,7 +466,11 @@ export default function WordleGame() {
                   isRevealing={row.isRevealing}
                   revealIndex={ci}
                   isPopping={row.isActive && popTile === ci}
-                  revealed={!row.isActive && !row.isRevealing && rowIdx < guesses.length}
+                  revealed={
+                    !row.isActive &&
+                    !row.isRevealing &&
+                    rowIdx < guesses.length
+                  }
                 />
               ))}
             </motion.div>
@@ -391,7 +480,7 @@ export default function WordleGame() {
         {/* Keyboard */}
         <div className="flex flex-col gap-[6px] mt-2 w-full max-w-[500px]">
           {KEYBOARD_ROWS.map((row, ri) => (
-            <div key={ri} className="flex gap-[5px] justify-center">
+            <div key={ri} className="flex gap-[4px] sm:gap-[5px] justify-center">
               {row.map((key) => {
                 const state = keyMap.get(key);
                 const isWide = key === "ENTER" || key === "⌫";
@@ -427,7 +516,9 @@ export default function WordleGame() {
                 ) : (
                   <p className="font-inter text-sm text-muted">
                     The word was{" "}
-                    <span className="text-accent font-semibold tracking-wider">{answer}</span>
+                    <span className="text-accent font-semibold tracking-wider">
+                      {answer}
+                    </span>
                   </p>
                 )}
               </div>
@@ -467,24 +558,44 @@ interface TileProps {
   revealed: boolean;
 }
 
-function LetterTile({ char, state, isRevealing, revealIndex, isPopping, revealed }: TileProps) {
+function LetterTile({
+  char,
+  state,
+  isRevealing,
+  revealIndex,
+  isPopping,
+  revealed,
+}: TileProps) {
   const [displayState, setDisplayState] = useState<LetterState>(state);
   const [isFlipping, setIsFlipping] = useState(false);
 
   useEffect(() => {
-    if (!isRevealing) { setDisplayState(state); return; }
+    if (!isRevealing) {
+      setDisplayState(state);
+      return;
+    }
     setDisplayState("tbd");
     const flipDelay = revealIndex * REVEAL_DELAY_PER_TILE;
 
     const f1 = setTimeout(() => setIsFlipping(true), flipDelay);
-    const f2 = setTimeout(() => setDisplayState(state), flipDelay + 250);
+    const f2 = setTimeout(
+      () => setDisplayState(state),
+      flipDelay + 250
+    );
     const f3 = setTimeout(() => setIsFlipping(false), flipDelay + 500);
 
-    return () => { clearTimeout(f1); clearTimeout(f2); clearTimeout(f3); };
+    return () => {
+      clearTimeout(f1);
+      clearTimeout(f2);
+      clearTimeout(f3);
+    };
   }, [isRevealing, state, revealIndex]);
 
   useEffect(() => {
-    if (revealed) { setDisplayState(state); setIsFlipping(false); }
+    if (revealed) {
+      setDisplayState(state);
+      setIsFlipping(false);
+    }
   }, [revealed, state]);
 
   useEffect(() => {
@@ -511,7 +622,9 @@ function LetterTile({ char, state, isRevealing, revealIndex, isPopping, revealed
         backgroundColor: STATE_COLORS[displayState],
         border: `2px solid ${STATE_BORDER[displayState]}`,
         color: displayState === "empty" ? "transparent" : "#e7e7e7",
-        transition: isFlipping ? "none" : "background-color 0.15s ease, border-color 0.15s ease",
+        transition: isFlipping
+          ? "none"
+          : "background-color 0.15s ease, border-color 0.15s ease",
       }}
     >
       {char || ""}
@@ -532,17 +645,26 @@ function KeyButton({ label, state, wide, onPress, disabled }: KeyProps) {
   return (
     <motion.button
       whileTap={disabled ? {} : { scale: 0.92 }}
-      onClick={() => { if (!disabled) onPress(); }}
+      onClick={() => {
+        if (!disabled) onPress();
+      }}
       disabled={disabled}
       className={`h-[52px] sm:h-14 rounded-lg font-inter font-medium
                   transition-all duration-150
-                  ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-95"}`}
+                  ${
+                    disabled
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer active:scale-95"
+                  }`}
       style={{
         backgroundColor: state ? STATE_COLORS[state] : "#2a2a2a",
-        border: `1px solid ${state ? STATE_BORDER[state] : "rgba(255,255,255,0.08)"}`,
-        color: state === "correct" || state === "present" ? "#fff" : "#c0c0c0",
-        minWidth: wide ? "64px" : "32px",
-        padding: wide ? "0 12px" : "0 6px",
+        border: `1px solid ${
+          state ? STATE_BORDER[state] : "rgba(255,255,255,0.08)"
+        }`,
+        color:
+          state === "correct" || state === "present" ? "#fff" : "#c0c0c0",
+        minWidth: wide ? "58px" : "28px",
+        padding: wide ? "0 10px" : "0 4px",
         fontSize: wide ? "11px" : "14px",
         letterSpacing: wide ? "0.05em" : "0",
         transition: "background-color 0.3s, border-color 0.3s, color 0.3s",
