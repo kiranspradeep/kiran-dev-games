@@ -9,20 +9,24 @@ interface GameLayoutProps {
   controls: { key: string; description: string }[];
 }
 
-export default function GameLayout({ children, title, controls }: GameLayoutProps) {
+export default function GameLayout({
+  children,
+  title,
+  controls,
+}: GameLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <main className="flex-1 pt-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-6"
+            className="mb-4 shrink-0"
           >
-            <h1 className="font-cormorant text-4xl sm:text-5xl font-light text-primary mb-3">
+            <h1 className="font-cormorant text-3xl sm:text-4xl font-light text-primary mb-2">
               {title}
             </h1>
             <div className="flex flex-wrap gap-2">

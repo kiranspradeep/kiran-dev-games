@@ -47,6 +47,26 @@ function TwentyIcon() {
   );
 }
 
+function PacmanIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+        fill="#C8A97E" opacity="0.15"
+      />
+      <path
+        d="M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16z"
+        fill="none"
+      />
+      <path
+        d="M12 12L20 6A9 9 0 1 0 20 18L12 12Z"
+        fill="#C8A97E"
+      />
+      <circle cx="13" cy="8" r="1.2" fill="#0a0a0a" />
+    </svg>
+  );
+}
+
 const GAMES = [
   {
     id: "snake" as const,
@@ -55,6 +75,14 @@ const GAMES = [
     href: "/snake",
     icon: <SnakeIcon />,
     tag: "Classic",
+  },
+  {
+    id: "pacman" as const,
+    title: "Pac-Man",
+    description: "Navigate the maze, eat all dots, avoid ghosts. Power pellets turn the tables.",
+    href: "/pacman",
+    icon: <PacmanIcon />,
+    tag: "Arcade",
   },
   {
     id: "2048" as const,
@@ -145,7 +173,7 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {GAMES.map((game, i) => (
               <GameCard
                 key={game.id}
