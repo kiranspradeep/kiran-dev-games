@@ -1,3 +1,4 @@
+//app\page.tsx
 "use client";
 
 import {
@@ -20,6 +21,7 @@ import {
   Radio,
   Shield,
 } from "lucide-react";
+import Footer from "@/components/Footer";
 
 // ── Existing Games ──────────────────────────────────────────────────────────
 const EXISTING_GAMES = [
@@ -1202,41 +1204,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER BAR ───────────────────────────────────────────────────── */}
-      <footer
-        className="px-4 sm:px-6 py-6"
-        style={{ borderTop: "1px solid var(--border)" }}
-      >
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <span
-              className="font-inter text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--primary)" }}
-            >
-              KSP
-            </span>
-            <span
-              className="font-inter text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--neon)" }}
-            >
-              Games
-            </span>
-          </div>
-          <span
-            className="font-inter text-xs"
-            style={{ color: "var(--muted)" }}
-          >
-            Scores saved locally · No tracking · Open source
-          </span>
-          <div className="flex items-center gap-4">
-            <span
-              className="font-inter text-xs"
-              style={{ color: "var(--muted)" }}
-            >
-              Built with Next.js · TypeScript · Canvas API
-            </span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
