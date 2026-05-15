@@ -1,6 +1,6 @@
-//app\pacman\page.tsx
 import GameLayout from "@/components/GameLayout";
 import PacmanGame from "@/components/games/PacmanGame";
+import ScoreSyncWrapper from "@/components/games/ScoreSyncWrapper";
 
 const CONTROLS = [
   { key: "↑ ↓ ← →", description: "Move" },
@@ -11,7 +11,9 @@ const CONTROLS = [
 export default function PacmanPage() {
   return (
     <GameLayout title="Pac-Man" controls={CONTROLS}>
-      <PacmanGame />
+      <ScoreSyncWrapper gameId="pacman">
+        <PacmanGame />
+      </ScoreSyncWrapper>
     </GameLayout>
   );
 }

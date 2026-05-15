@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { saveScore, getScore } from "@/lib/scores";
 
-// ─── Types ───────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────
 type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT" | "NONE";
 type GameState = "idle" | "running" | "gameover" | "won" | "paused";
 type GhostMode = "scatter" | "chase" | "frightened";
@@ -26,7 +26,7 @@ interface Ghost {
   speed: number;
 }
 
-// ─── Constants ───────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────────────────────
 const COLS = 21;
 const ROWS = 23;
 const CANVAS_RES_W = COLS * 24;
@@ -85,7 +85,7 @@ const GHOST_SCATTER_TARGETS: Point[] = [
   { x: 1, y: ROWS - 2 },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────
 function cloneMap(m: number[][]): number[][] {
   return m.map((r) => [...r]);
 }
@@ -147,7 +147,7 @@ function countDots(map: number[][]): number {
   return c;
 }
 
-// ─── Component ───────────────────────────────────────────
+// ─── Component ───────────────────────────────────────────────────────────
 export default function PacmanGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -631,6 +631,12 @@ export default function PacmanGame() {
             );
             setHighScore(result.highScore);
             setRecentScores(result.recentScores ?? []);
+
+            // ── Score sync (1 line) ──
+            if (typeof window !== "undefined" && window.__syncScore) {
+              window.__syncScore(scoreRef.current, { level: levelRef.current });
+            }
+
             draw();
             return;
           } else {

@@ -1,6 +1,6 @@
-//app\snake\page.tsx
 import GameLayout from "@/components/GameLayout";
 import SnakeGame from "@/components/games/SnakeGame";
+import ScoreSyncWrapper from "@/components/games/ScoreSyncWrapper";
 
 const CONTROLS = [
   { key: "↑ ↓ ← →", description: "Move" },
@@ -11,7 +11,9 @@ const CONTROLS = [
 export default function SnakePage() {
   return (
     <GameLayout title="Snake" controls={CONTROLS}>
-      <SnakeGame />
+      <ScoreSyncWrapper gameId="snake">
+        <SnakeGame />
+      </ScoreSyncWrapper>
     </GameLayout>
   );
 }

@@ -178,10 +178,20 @@ export default function WordleGame() {
         const result = saveScore("wordle", score);
         setHighScore(result.highScore);
         showMessage(WIN_MESSAGES[rowIndex] ?? "Nice!", 3000);
+
+        // ── Score sync (1 line) ──
+        if (typeof window !== "undefined" && window.__syncScore) {
+          window.__syncScore(score, { guesses: rowIndex + 1, word: answer });
+        }
       } else if (newGuesses.length >= MAX_GUESSES) {
         setPhase("lost");
         saveScore("wordle", 0);
         showMessage(answer, 0);
+
+        // ── Score sync (zero score) ──
+        if (typeof window !== "undefined" && window.__syncScore) {
+          window.__syncScore(0, { guesses: MAX_GUESSES, word: answer });
+        }
       } else {
         setPhase("playing");
       }

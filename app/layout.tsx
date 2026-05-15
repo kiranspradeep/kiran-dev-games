@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
+import AuthModal from "@/components/auth/AuthModal";
+import SettingsModal from "@/components/ui/SettingsModal";
+import ToastContainer from "@/components/ui/Toast";
+import Providers from "./providers";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -32,9 +36,21 @@ export default function RootLayout({
     <html lang="en" className={`${cormorant.variable} ${inter.variable}`}>
       <body
         className="min-h-screen"
-        style={{ backgroundColor: "var(--background)", color: "var(--primary)" }}
+        style={{
+          backgroundColor: "var(--background)",
+          color: "var(--primary)",
+        }}
       >
-        {children}
+        <Providers>
+          {children}
+
+          {/* Global modals — always mounted, shown via uiStore */}
+          <AuthModal />
+          <SettingsModal />
+
+          {/* Global toast layer */}
+          <ToastContainer />
+        </Providers>
       </body>
     </html>
   );

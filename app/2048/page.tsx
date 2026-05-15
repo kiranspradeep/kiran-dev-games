@@ -1,6 +1,6 @@
-//app\2048\page.tsx
 import GameLayout from "@/components/GameLayout";
 import Game2048 from "@/components/games/Game2048";
+import ScoreSyncWrapper from "@/components/games/ScoreSyncWrapper";
 
 const CONTROLS = [
   { key: "↑ ↓ ← →", description: "Slide tiles" },
@@ -11,7 +11,9 @@ const CONTROLS = [
 export default function Page2048() {
   return (
     <GameLayout title="2048" controls={CONTROLS}>
-      <Game2048 />
+      <ScoreSyncWrapper gameId="2048">
+        <Game2048 />
+      </ScoreSyncWrapper>
     </GameLayout>
   );
 }

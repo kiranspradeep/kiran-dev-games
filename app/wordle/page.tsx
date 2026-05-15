@@ -1,6 +1,6 @@
-//app\wordle\page.tsx
 import GameLayout from "@/components/GameLayout";
 import WordleGame from "@/components/games/WordleGame";
+import ScoreSyncWrapper from "@/components/games/ScoreSyncWrapper";
 
 const CONTROLS = [
   { key: "A–Z", description: "Type a letter" },
@@ -11,7 +11,9 @@ const CONTROLS = [
 export default function WordlePage() {
   return (
     <GameLayout title="Wordle" controls={CONTROLS}>
-      <WordleGame />
+      <ScoreSyncWrapper gameId="wordle">
+        <WordleGame />
+      </ScoreSyncWrapper>
     </GameLayout>
   );
 }

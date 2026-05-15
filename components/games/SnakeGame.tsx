@@ -391,6 +391,12 @@ export default function SnakeGame() {
     const result = saveScore("snake", scoreRef.current);
     setHighScore(result.highScore);
     setRecentScores(result.recentScores ?? []);
+
+    // ── Score sync (1 line) ──
+    if (typeof window !== "undefined" && window.__syncScore) {
+      window.__syncScore(scoreRef.current, { mode: gameModeRef.current });
+    }
+
     draw();
   }, [draw]);
 
