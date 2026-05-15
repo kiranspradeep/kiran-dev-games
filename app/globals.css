@@ -13,22 +13,95 @@ html {
   scroll-behavior: smooth;
 }
 
+:root {
+  --neon: #00A8FF;
+  --neon-dim: rgba(0, 168, 255, 0.15);
+  --neon-glow: rgba(0, 168, 255, 0.4);
+  --gold: #C8A97E;
+  --gold-dim: rgba(200, 169, 126, 0.15);
+  --background: #080810;
+  --surface: #0e0e1a;
+  --card: #12121e;
+  --primary: #e7e7e7;
+  --muted: #4a4a6a;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-neon: rgba(0, 168, 255, 0.2);
+  --border-gold: rgba(200, 169, 126, 0.2);
+}
+
 body {
-  background-color: #0a0a0a;
-  color: #e7e7e7;
+  background-color: var(--background);
+  color: var(--primary);
   font-family: var(--font-inter-loaded), "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #C8A97E; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #d4b896; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #33bbff; }
 
 ::selection {
-  background: rgba(200, 169, 126, 0.2);
-  color: #C8A97E;
+  background: rgba(0, 168, 255, 0.2);
+  color: var(--neon);
 }
 
 canvas { image-rendering: pixelated; }
+
+/* Neon glow utility */
+.neon-glow {
+  box-shadow: 0 0 20px rgba(0, 168, 255, 0.3), 0 0 60px rgba(0, 168, 255, 0.1);
+}
+
+.neon-text-glow {
+  text-shadow: 0 0 20px rgba(0, 168, 255, 0.6);
+}
+
+.gold-glow {
+  box-shadow: 0 0 20px rgba(200, 169, 126, 0.3);
+}
+
+/* HUD scanline overlay */
+.hud-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Animated border gradient */
+@keyframes borderPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.border-pulse {
+  animation: borderPulse 2s ease-in-out infinite;
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.float-anim {
+  animation: floatY 4s ease-in-out infinite;
+}
+
+@keyframes scanMove {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.scan-line {
+  animation: scanMove 8s linear infinite;
+}

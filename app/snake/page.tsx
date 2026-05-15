@@ -1,3 +1,4 @@
+//app\snake\page.tsx
 import GameLayout from "@/components/GameLayout";
 import SnakeGame from "@/components/games/SnakeGame";
 

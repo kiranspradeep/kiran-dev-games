@@ -7,12 +7,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#0a0a0a",
-        surface:    "#111111",
-        card:       "#161616",
+        background: "#080810",
+        surface:    "#0e0e1a",
+        card:       "#12121e",
         accent:     "#C8A97E",
+        neon:       "#00A8FF",
         primary:    "#e7e7e7",
-        muted:      "#555555",
+        muted:      "#4a4a6a",
       },
       fontFamily: {
         cormorant: ["var(--font-cormorant-loaded)", "Cormorant Garamond", "serif"],

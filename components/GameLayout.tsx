@@ -1,4 +1,3 @@
-// components/GameLayout.tsx
 "use client";
 
 import { motion } from "framer-motion";
@@ -29,42 +28,75 @@ export default function GameLayout({
 
   return (
     <div
-      className={`min-h-screen bg-background flex flex-col ${
+      className={`min-h-screen flex flex-col ${
         isPlaying && isMobile ? "overflow-hidden h-screen" : ""
       }`}
+      style={{ background: "var(--background)" }}
     >
-      {/* Hide navbar on mobile when playing to maximize space */}
       {!(isPlaying && isMobile) && <Navbar />}
-      <main className={`flex-1 ${isPlaying && isMobile ? "pt-2" : "pt-16"}`}>
+
+      {/* HUD top bar */}
+      {!(isPlaying && isMobile) && (
+        <div
+          className="fixed top-[57px] left-0 right-0 z-30 h-[1px]"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, var(--neon-dim), transparent)",
+          }}
+        />
+      )}
+
+      <main className={`flex-1 ${isPlaying && isMobile ? "pt-2" : "pt-20"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col">
-          {/* Header - compact on mobile when playing */}
+
+          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className={`shrink-0 ${isPlaying && isMobile ? "mb-2" : "mb-4"}`}
+            className={`shrink-0 ${isPlaying && isMobile ? "mb-2" : "mb-6"}`}
           >
-            <h1
-              className={`font-cormorant font-light text-primary ${
-                isPlaying && isMobile
-                  ? "text-xl mb-1"
-                  : "text-3xl sm:text-4xl mb-2"
-              }`}
-            >
-              {title}
-            </h1>
-            {/* Hide controls legend on mobile when playing */}
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="h-5 w-[2px] rounded-full"
+                style={{ background: "var(--neon)" }}
+              />
+              <h1
+                className={`font-inter font-bold tracking-tight ${
+                  isPlaying && isMobile ? "text-lg" : "text-2xl sm:text-3xl"
+                }`}
+                style={{ color: "var(--primary)" }}
+              >
+                {title}
+              </h1>
+            </div>
+
+            {/* Controls */}
             {!(isPlaying && isMobile) && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {controls.map((ctrl) => (
                   <div
                     key={ctrl.key}
-                    className="flex items-center gap-2 bg-card border border-white/[0.06] rounded-lg px-2.5 py-1"
+                    className="flex items-center gap-2 rounded-lg px-3 py-1.5"
+                    style={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                    }}
                   >
-                    <kbd className="font-inter text-[10px] font-medium text-accent bg-accent/10 rounded px-1.5 py-0.5">
+                    <kbd
+                      className="font-inter text-[10px] font-bold px-2 py-0.5 rounded"
+                      style={{
+                        background: "rgba(0,168,255,0.1)",
+                        border: "1px solid rgba(0,168,255,0.2)",
+                        color: "var(--neon)",
+                      }}
+                    >
                       {ctrl.key}
                     </kbd>
-                    <span className="font-inter text-[11px] text-muted">
+                    <span
+                      className="font-inter text-[11px]"
+                      style={{ color: "var(--muted)" }}
+                    >
                       {ctrl.description}
                     </span>
                   </div>

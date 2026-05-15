@@ -1,3 +1,4 @@
+//app\2048\page.tsx
 import GameLayout from "@/components/GameLayout";
 import Game2048 from "@/components/games/Game2048";
 

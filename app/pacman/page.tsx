@@ -1,3 +1,4 @@
+//app\pacman\page.tsx
 import GameLayout from "@/components/GameLayout";
 import PacmanGame from "@/components/games/PacmanGame";
 

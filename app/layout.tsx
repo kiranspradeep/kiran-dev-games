@@ -18,8 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "KSP Games",
-  description: "A dark-themed game hub. Pick a game, play it.",
+  title: "KSP Games — Competitive Browser Gaming Platform",
+  description:
+    "A next-generation multiplayer game hub featuring competitive strategy games, realtime matchmaking, and immersive browser experiences.",
 };
 
 export default function RootLayout({

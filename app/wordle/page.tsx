@@ -1,3 +1,4 @@
+//app\wordle\page.tsx
 import GameLayout from "@/components/GameLayout";
 import WordleGame from "@/components/games/WordleGame";
 
