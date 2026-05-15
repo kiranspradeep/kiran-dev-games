@@ -1,0 +1,401 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  GITHUB
+}
+
+enum UserRole {
+  PLAYER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum GameId {
+  SNAKE
+  PACMAN
+  WORDLE
+  GAME_2048
+  STRATEGY_LUDO
+  BATTLE_SNAKE
+  AIM_TRAINER
+  ROPE_SWING
+  DESTRUCTION
+}
+
+enum MatchStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  CANCELLED
+}
+
+enum MatchResult {
+  WIN
+  LOSS
+  DRAW
+  ABANDONED
+}
+
+enum RankTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+  MASTER
+  GRANDMASTER
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  ACHIEVEMENT_UNLOCKED
+  MATCH_INVITE
+  MATCH_RESULT
+  SYSTEM
+  RANK_UP
+  RANK_DOWN
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER + AUTH
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  username      String     @unique
+  displayName   String
+  passwordHash  String?    // null for OAuth users
+  avatarUrl     String?
+  bio           String?    @db.VarChar(300)
+  role          UserRole   @default(PLAYER)
+  status        UserStatus @default(ACTIVE)
+  isGuest       Boolean    @default(false)
+  emailVerified Boolean    @default(false)
+
+  // XP + Level
+  xp            Int        @default(0)
+  level         Int        @default(1)
+
+  // Timestamps
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  lastSeenAt    DateTime?
+  deletedAt     DateTime?
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+  gameScores    GameScore[]
+  matchPlayers  MatchPlayer[]
+  achievements  UserAchievement[]
+  rankings      PlayerRanking[]
+  notifications Notification[]
+  sentFriendships     Friendship[] @relation("FriendshipSender")
+  receivedFriendships Friendship[] @relation("FriendshipReceiver")
+
+  @@index([email])
+  @@index([username])
+  @@index([status])
+  @@map("users")
+}
+
+model Account {
+  id                String       @id @default(cuid())
+  userId            String
+  provider          AuthProvider
+  providerAccountId String
+  accessToken       String?      @db.Text
+  refreshToken      String?      @db.Text
+  expiresAt         DateTime?
+  tokenType         String?
+  scope             String?
+  idToken           String?      @db.Text
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([refreshToken])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+
+  @@index([token])
+  @@index([email])
+  @@map("email_verifications")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+
+  @@index([token])
+  @@map("password_resets")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROFILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  favoriteGame    GameId?
+  totalPlayTime   Int      @default(0) // seconds
+  totalGamesPlayed Int     @default(0)
+  totalWins       Int      @default(0)
+  totalLosses     Int      @default(0)
+  totalDraws      Int      @default(0)
+  winRate         Float    @default(0)
+  showcaseBadges  String[] @default([])
+  country         String?
+  timezone        String?
+  isPublic        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FRIENDSHIPS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  sender   User @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@map("friendships")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GAME SCORES (solo games)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model GameScore {
+  id          String   @id @default(cuid())
+  userId      String
+  gameId      GameId
+  score       Int
+  metadata    Json?    // game-specific data (level, moves, time, etc.)
+  achievedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, gameId])
+  @@index([gameId, score])
+  @@map("game_scores")
+}
+
+model GameLeaderboard {
+  id          String   @id @default(cuid())
+  gameId      GameId   @unique
+  topScores   Json     // cached top N scores for fast serving
+  updatedAt   DateTime @updatedAt
+
+  @@map("game_leaderboards")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MATCHES (multiplayer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Match {
+  id          String      @id @default(cuid())
+  gameId      GameId
+  roomCode    String      @unique
+  status      MatchStatus @default(WAITING)
+  isRanked    Boolean     @default(false)
+  maxPlayers  Int         @default(2)
+  metadata    Json?       // game-specific match config
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  players MatchPlayer[]
+
+  @@index([status])
+  @@index([gameId])
+  @@index([roomCode])
+  @@map("matches")
+}
+
+model MatchPlayer {
+  id          String       @id @default(cuid())
+  matchId     String
+  userId      String
+  result      MatchResult?
+  score       Int?
+  placement   Int?         // 1st, 2nd, etc.
+  eloChange   Int?         // ELO gained or lost
+  metadata    Json?        // player-specific match data
+  joinedAt    DateTime     @default(now())
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, userId])
+  @@index([userId])
+  @@index([matchId])
+  @@map("match_players")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RANKINGS (ELO)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PlayerRanking {
+  id          String    @id @default(cuid())
+  userId      String
+  gameId      GameId
+  elo         Int       @default(1000)
+  tier        RankTier  @default(BRONZE)
+  wins        Int       @default(0)
+  losses      Int       @default(0)
+  draws       Int       @default(0)
+  winStreak   Int       @default(0)
+  bestElo     Int       @default(1000)
+  season      Int       @default(1)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId, season])
+  @@index([gameId, elo])
+  @@index([userId])
+  @@map("player_rankings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACHIEVEMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String
+  icon        String
+  xpReward    Int      @default(0)
+  rarity      String   @default("common") // common, rare, epic, legendary
+  gameId      GameId?  // null = platform-wide achievement
+  isHidden    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  metadata      Json?
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
