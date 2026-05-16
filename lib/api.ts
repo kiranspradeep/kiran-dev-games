@@ -175,3 +175,67 @@ export const usersApi = {
 };
 
 export default api;
+
+// ── Notifications API ─────────────────────────────────────────────────────────
+export const notificationsApi = {
+  getAll: async (opts?: { unreadOnly?: boolean; limit?: number }) => {
+    const res = await api.get("/api/notifications", { params: opts });
+    return res.data.data;
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    const res = await api.get("/api/notifications/unread-count");
+    return res.data.data.count;
+  },
+
+  markRead: async (ids: string[]) => {
+    await api.post("/api/notifications/read", { ids });
+  },
+
+  markAllRead: async () => {
+    await api.post("/api/notifications/read-all");
+  },
+
+  delete: async (id: string) => {
+    await api.delete(`/api/notifications/${id}`);
+  },
+
+  clearRead: async () => {
+    await api.delete("/api/notifications/clear/read");
+  },
+};
+
+// ── Friends API ───────────────────────────────────────────────────────────────
+export const friendsApi = {
+  getAll: async () => {
+    const res = await api.get("/api/friends");
+    return res.data.data.friends;
+  },
+
+  getPending: async () => {
+    const res = await api.get("/api/friends/pending");
+    return res.data.data;
+  },
+
+  getStatus: async (userId: string) => {
+    const res = await api.get(`/api/friends/status/${userId}`);
+    return res.data.data;
+  },
+
+  sendRequest: async (username: string) => {
+    const res = await api.post("/api/friends/request", { username });
+    return res.data;
+  },
+
+  accept: async (friendshipId: string) => {
+    await api.post(`/api/friends/${friendshipId}/accept`);
+  },
+
+  decline: async (friendshipId: string) => {
+    await api.post(`/api/friends/${friendshipId}/decline`);
+  },
+
+  remove: async (friendId: string) => {
+    await api.delete(`/api/friends/${friendId}`);
+  },
+};

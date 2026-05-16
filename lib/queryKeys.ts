@@ -1,16 +1,11 @@
-// ── Centralized React Query key factory ───────────────────────────────────────
-// Keeps all cache keys consistent across the app
-
 export const queryKeys = {
   // Auth
-  me: ["auth", "me"] as const,
-  xp: ["auth", "xp"] as const,
+  me:    ["auth", "me"]  as const,
+  xp:    ["auth", "xp"]  as const,
 
   // Users
-  profile: (username: string) =>
-    ["users", "profile", username] as const,
-  searchUsers: (query: string) =>
-    ["users", "search", query] as const,
+  profile:     (username: string) => ["users", "profile", username] as const,
+  searchUsers: (query: string)    => ["users", "search",  query]    as const,
 
   // Scores
   personalBests: (userId: string) =>
@@ -21,6 +16,12 @@ export const queryKeys = {
     ["scores", "history", userId, gameId] as const,
 
   // Notifications
-  notifications: (userId: string) =>
-    ["notifications", userId] as const,
+  notifications:   (userId: string) => ["notifications",       userId] as const,
+  unreadCount:     (userId: string) => ["notifications-count", userId] as const,
+
+  // Friends
+  friends:         (userId: string) => ["friends",         userId] as const,
+  pendingRequests: (userId: string) => ["friends-pending", userId] as const,
+  friendStatus:    (userId: string, otherId: string) =>
+    ["friends-status", userId, otherId] as const,
 } as const;

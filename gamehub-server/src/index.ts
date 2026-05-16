@@ -14,6 +14,8 @@
   import usersRouter  from "./routes/users";
   import scoresRouter from "./routes/scores";
   import leaderboardsRouter from "./routes/leaderboards";
+  import notificationsRouter from "./routes/notifications";
+  import friendsRouter       from "./routes/friends";
 
   import prisma from "./lib/prisma";
 
@@ -47,6 +49,8 @@
   app.use("/api/users",   usersRouter);
   app.use("/api/scores",  scoresRouter);
   app.use("/api/leaderboards", leaderboardsRouter);
+  app.use("/api/notifications", notificationsRouter);
+  app.use("/api/friends",       friendsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
