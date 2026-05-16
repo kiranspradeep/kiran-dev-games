@@ -99,18 +99,21 @@ export default function SignupForm({
         `Account created for ${res.data.user.displayName}`
       );
       onSuccess?.();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Registration failed";
+    // SignupForm.tsx — in onSubmit catch, make it more specific:
+} catch (err: unknown) {
+  const message =
+    err instanceof Error ? err.message : "Registration failed";
 
-      if (message.toLowerCase().includes("email")) {
-        setError("email", { message });
-      } else if (message.toLowerCase().includes("username")) {
-        setError("username", { message });
-      } else {
-        setError("email", { message });
-      }
-    } finally {
+  const lower = message.toLowerCase();
+
+  if (lower.includes("email already exists") || lower.includes("email")) {
+    setError("email", { message: "This email is already registered. Try logging in." });
+  } else if (lower.includes("username") || lower.includes("taken")) {
+    setError("username", { message: "This username is taken. Try another." });
+  } else {
+    setError("email", { message });
+  }
+} finally {
       setIsLoading(false);
     }
   };

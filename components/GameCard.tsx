@@ -102,9 +102,11 @@ export default function GameCard({
 
   // Determine if we should try loading an image
   // Only non-coming-soon games have real images at /images/games/{id}.png
-  const hasImage = !comingSoon;
-  const imagePath = `/images/games/${id}.png`;
-  const showImage = hasImage && !imgError;
+  // const hasImage = !comingSoon;
+  // const imagePath = `/images/games/${id}.png`;
+  // const showImage = hasImage && !imgError;
+
+const showImage = false; 
 
   const CardContent = (
     <motion.div
@@ -133,88 +135,78 @@ export default function GameCard({
       />
 
       {/* Thumbnail area */}
+     {/* Thumbnail area */}
+<div
+  className="relative h-44 overflow-hidden"
+  style={{ background: "var(--surface)" }}
+>
+  {/* Always use SVG placeholder until real images exist */}
+  <ImagePlaceholderSVG
+    title={title}
+    accentColor={accentColor}
+    comingSoon={comingSoon}
+  />
+
+  {/* Overlay gradient */}
+  <div
+    className="absolute inset-0"
+    style={{
+      background:
+        "linear-gradient(to bottom, transparent 40%, var(--card) 100%)",
+    }}
+  />
+
+  {/* Coming soon overlay */}
+  {comingSoon && (
+    <div
+      className="absolute inset-0 flex items-center justify-center z-[2]"
+      style={{
+        background: "rgba(8,8,16,0.55)",
+        backdropFilter: "blur(2px)",
+      }}
+    >
       <div
-        className="relative h-44 overflow-hidden"
-        style={{ background: "var(--surface)" }}
+        className="px-4 py-2 rounded-full font-inter text-xs font-bold
+                   tracking-[0.2em] uppercase"
+        style={{
+          background: "rgba(0,168,255,0.1)",
+          border: "1px solid rgba(0,168,255,0.3)",
+          color: "var(--neon)",
+        }}
       >
-        {/* Real image or SVG fallback */}
-        {showImage ? (
-          <img
-            src={imagePath}
-            alt={title}
-            onError={() => setImgError(true)}
-            className="absolute inset-0 w-full h-full object-cover transition-transform
-                       duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <ImagePlaceholderSVG
-            title={title}
-            accentColor={accentColor}
-            comingSoon={comingSoon}
-          />
-        )}
-
-        {/* Overlay gradient */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to bottom, transparent 40%, var(--card) 100%)",
-          }}
-        />
-
-        {/* Coming soon overlay */}
-        {comingSoon && (
-          <div
-            className="absolute inset-0 flex items-center justify-center z-[2]"
-            style={{
-              background: "rgba(8,8,16,0.55)",
-              backdropFilter: "blur(2px)",
-            }}
-          >
-            <div
-              className="px-4 py-2 rounded-full font-inter text-xs font-bold
-                         tracking-[0.2em] uppercase"
-              style={{
-                background: "rgba(0,168,255,0.1)",
-                border: "1px solid rgba(0,168,255,0.3)",
-                color: "var(--neon)",
-              }}
-            >
-              Coming Soon
-            </div>
-          </div>
-        )}
-
-        {/* Genre tag top-left */}
-        {tag && (
-          <div
-            className="absolute top-3 left-3 px-2.5 py-1 rounded-full
-                       font-inter text-[10px] font-semibold uppercase tracking-wider z-10"
-            style={{
-              background: "rgba(0,168,255,0.15)",
-              border: "1px solid rgba(0,168,255,0.3)",
-              color: "var(--neon)",
-            }}
-          >
-            {tag}
-          </div>
-        )}
-
-        {/* Players top-right */}
-        <div
-          className="absolute top-3 right-3 px-2 py-1 rounded-lg
-                     font-inter text-[10px] font-medium z-10"
-          style={{
-            background: "rgba(8,8,16,0.8)",
-            border: "1px solid var(--border)",
-            color: "var(--muted)",
-          }}
-        >
-          {players}
-        </div>
+        Coming Soon
       </div>
+    </div>
+  )}
 
+  {/* Genre tag top-left */}
+  {tag && (
+    <div
+      className="absolute top-3 left-3 px-2.5 py-1 rounded-full
+                 font-inter text-[10px] font-semibold uppercase tracking-wider z-10"
+      style={{
+        background: "rgba(0,168,255,0.15)",
+        border: "1px solid rgba(0,168,255,0.3)",
+        color: "var(--neon)",
+      }}
+    >
+      {tag}
+    </div>
+  )}
+
+  {/* Players top-right */}
+  <div
+    className="absolute top-3 right-3 px-2 py-1 rounded-lg
+               font-inter text-[10px] font-medium z-10"
+    style={{
+      background: "rgba(8,8,16,0.8)",
+      border: "1px solid var(--border)",
+      color: "var(--muted)",
+    }}
+  >
+    {players}
+  </div>
+</div>
       {/* Card body */}
       <div className="p-4 relative" style={{ background: "var(--card)" }}>
         {/* Neon glow on hover */}

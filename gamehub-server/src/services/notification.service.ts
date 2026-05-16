@@ -1,13 +1,13 @@
 import prisma from "../lib/prisma";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, Prisma } from "@prisma/client";
 import { Errors } from "../middleware/errorHandler";
 
 export interface CreateNotificationInput {
   userId: string;
-  type: NotificationType;
-  title: string;
-  body: string;
-  data?: Record<string, unknown>;
+  type:   NotificationType;
+  title:  string;
+  body:   string;
+  data?:  Record<string, unknown>;
 }
 
 // ── Create a notification ─────────────────────────────────────────────────────
@@ -17,18 +17,20 @@ export async function createNotification(
   return prisma.notification.create({
     data: {
       userId: input.userId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      data: input.data ?? {},
+      type:   input.type,
+      title:  input.title,
+      body:   input.body,
+      // Cast to Prisma's JSON type — Record<string,unknown> is compatible
+      // but TypeScript needs the explicit cast here
+      data:   (input.data ?? {}) as Prisma.InputJsonValue,
     },
     select: {
-      id: true,
-      type: true,
-      title: true,
-      body: true,
-      data: true,
-      isRead: true,
+      id:        true,
+      type:      true,
+      title:     true,
+      body:      true,
+      data:      true,
+      isRead:    true,
       createdAt: true,
     },
   });
@@ -48,17 +50,17 @@ export async function getUserNotifications(
         ...(unreadOnly ? { isRead: false } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: limit,
-      skip: offset,
+      take:    limit,
+      skip:    offset,
       select: {
-        id: true,
-        type: true,
-        title: true,
-        body: true,
-        data: true,
-        isRead: true,
+        id:        true,
+        type:      true,
+        title:     true,
+        body:      true,
+        data:      true,
+        isRead:    true,
         createdAt: true,
-        readAt: true,
+        readAt:    true,
       },
     }),
     prisma.notification.count({
@@ -76,7 +78,7 @@ export async function markAsRead(
 ) {
   await prisma.notification.updateMany({
     where: {
-      id: { in: notificationIds },
+      id:     { in: notificationIds },
       userId,
     },
     data: {
@@ -90,7 +92,7 @@ export async function markAsRead(
 export async function markAllAsRead(userId: string) {
   await prisma.notification.updateMany({
     where: { userId, isRead: false },
-    data: { isRead: true, readAt: new Date() },
+    data:  { isRead: true, readAt: new Date() },
   });
 }
 
@@ -100,7 +102,7 @@ export async function deleteNotification(
   notificationId: string
 ) {
   const notification = await prisma.notification.findUnique({
-    where: { id: notificationId },
+    where:  { id: notificationId },
     select: { userId: true },
   });
 

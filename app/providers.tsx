@@ -24,7 +24,8 @@ export default function Providers({
   );
 
   return (
-    <SessionProvider>
+    // Tell SessionProvider where NextAuth now lives
+    <SessionProvider basePath="/api/oauth">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           {children}

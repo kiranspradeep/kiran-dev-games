@@ -22,12 +22,19 @@ router.post(
   authLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      console.log("📝 Register attempt:", req.body?.email, req.body?.username);
+
       const input = registerSchema.parse(req.body);
+
+      console.log("✅ Schema passed");
+
       const result = await AuthService.register(
         input,
         req.ip,
         req.headers["user-agent"]
       );
+
+      console.log("✅ Register success:", result.user.email);
 
       res.status(201).json({
         success: true,
@@ -35,6 +42,38 @@ router.post(
         data: result,
       });
     } catch (err) {
+      console.error("❌ Register error:", err);
+      next(err);
+    }
+  }
+);
+
+router.post(
+  "/login",
+  authLimiter,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      console.log("🔐 Login attempt:", req.body?.email);
+
+      const input = loginSchema.parse(req.body);
+
+      console.log("✅ Schema passed");
+
+      const result = await AuthService.login(
+        input,
+        req.ip,
+        req.headers["user-agent"]
+      );
+
+      console.log("✅ Login success:", result.user.email);
+
+      res.status(200).json({
+        success: true,
+        message: "Login successful",
+        data: result,
+      });
+    } catch (err) {
+      console.error("❌ Login error:", err);
       next(err);
     }
   }
@@ -46,12 +85,19 @@ router.post(
   authLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      console.log("🔐 Login attempt:", req.body?.email);
+
       const input = loginSchema.parse(req.body);
+
+      console.log("✅ Schema passed");
+
       const result = await AuthService.login(
         input,
         req.ip,
         req.headers["user-agent"]
       );
+
+      console.log("✅ Login success:", result.user.email);
 
       res.status(200).json({
         success: true,
@@ -59,6 +105,7 @@ router.post(
         data: result,
       });
     } catch (err) {
+      console.error("❌ Login error:", err);  // ← shows exact error
       next(err);
     }
   }

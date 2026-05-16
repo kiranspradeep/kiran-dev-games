@@ -1,12 +1,10 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { authenticate } from "../middleware/authenticate";
-import { apiLimiter } from "../middleware/rateLimiter";
 import * as NotificationService from "../services/notification.service";
 
 const router = Router();
 
-// All notification routes require auth
 router.use(authenticate);
 
 // ── GET /api/notifications ────────────────────────────────────────────────────
@@ -93,31 +91,33 @@ router.post(
   }
 );
 
-// ── DELETE /api/notifications/:id ─────────────────────────────────────────────
+// ── DELETE /api/notifications/clear/read ─────────────────────────────────────
+// IMPORTANT: This must come BEFORE /:id to avoid route conflict
 router.delete(
-  "/:id",
+  "/clear/read",
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await NotificationService.deleteNotification(
-        req.user!.id,
-        req.params.id
-      );
-      res.status(200).json({ success: true, message: "Notification deleted" });
+      await NotificationService.clearReadNotifications(req.user!.id);
+      res.status(200).json({
+        success: true,
+        message: "Read notifications cleared",
+      });
     } catch (err) {
       next(err);
     }
   }
 );
 
-// ── DELETE /api/notifications/clear-read ─────────────────────────────────────
+// ── DELETE /api/notifications/:id ─────────────────────────────────────────────
 router.delete(
-  "/clear/read",
+  "/:id",
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await NotificationService.clearReadNotifications(req.user!.id);
-      res
-        .status(200)
-        .json({ success: true, message: "Read notifications cleared" });
+      // Explicit string cast — Express params are always strings at runtime
+      const id = req.params["id"] as string;
+
+      await NotificationService.deleteNotification(req.user!.id, id);
+      res.status(200).json({ success: true, message: "Notification deleted" });
     } catch (err) {
       next(err);
     }

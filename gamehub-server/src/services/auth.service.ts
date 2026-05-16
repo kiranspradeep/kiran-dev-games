@@ -203,9 +203,16 @@ export async function login(
   });
 
   // Generic error to prevent email enumeration
-  if (!user || !user.passwordHash) {
-    throw Errors.unauthorized("Invalid email or password");
-  }
+ if (!user) {
+  throw Errors.unauthorized("Invalid email or password");
+}
+
+// ✅ Separate error for OAuth users
+if (!user.passwordHash) {
+  throw Errors.unauthorized(
+    "This account uses Google Sign-In. Please use the Google button."
+  );
+}
 
   if (user.status === "SUSPENDED") {
     throw Errors.forbidden("Your account has been suspended");

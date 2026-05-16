@@ -39,31 +39,42 @@ export default function LoginForm({
   } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const res = await authApi.login(data);
+  setIsLoading(true);
 
-      if (!res.success || !res.data) {
-        throw new Error(res.error?.message ?? "Login failed");
-      }
+  try {
+    const res = await authApi.login(data);
 
-      persistAuth(res.data.tokens);
-      setUser(res.data.user);
-      toast.success("Welcome back!", `Logged in as ${res.data.user.displayName}`);
-      onSuccess?.();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Invalid email or password";
-
-      if (message.toLowerCase().includes("password")) {
-        setError("password", { message });
-      } else {
-        setError("email", { message });
-      }
-    } finally {
-      setIsLoading(false);
+    if (!res.success || !res.data) {
+      throw new Error(res.error?.message ?? "Login failed");
     }
-  };
+
+    persistAuth(res.data.tokens);
+    setUser(res.data.user);
+
+    toast.success(
+      "Welcome back!",
+      `Logged in as ${res.data.user.displayName}`
+    );
+
+    onSuccess?.();
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Invalid email or password";
+
+    if (message.toLowerCase().includes("google")) {
+      setError("email", {
+        message:
+          "This account uses Google Sign-In. Use the Google button above.",
+      });
+    } else if (message.toLowerCase().includes("password")) {
+      setError("password", { message });
+    } else {
+      setError("email", { message });
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);

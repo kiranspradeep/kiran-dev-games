@@ -1,9 +1,21 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 import type { AuthResponse, ApiResponse, User } from "@/types/auth";
 
+// ── API URL ──────────────────────────────────────────────────────────────────
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Temporary debug — remove after confirming
+if (!API_URL) {
+  console.error(
+    "❌ NEXT_PUBLIC_API_URL is undefined. Check .env.local"
+  );
+} else {
+  console.log("✅ API URL:", API_URL);
+}
+
 // ── Create axios instance ─────────────────────────────────────────────────────
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: API_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
