@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useRoomStore } from "@/store/roomStore";
 import { useAuthStore } from "@/store/authStore";
 import { useSocketEmit, useSocketEvent } from "./useSocket";
@@ -19,7 +20,14 @@ interface RoomResponse {
   room?:   Room;
 }
 
+// Maps gameId to the route that should be loaded when the match starts
+const GAME_ROUTES: Record<string, string> = {
+  STRATEGY_LUDO: "/ludo",
+};
+
 export function useRoom() {
+  const router = useRouter();
+
   const {
     currentRoom,
     isInRoom,
@@ -39,8 +47,8 @@ export function useRoom() {
   } = useRoomStore();
 
   const { user } = useAuthStore();
-  const emit = useSocketEmit();
-  const toast = useToast();
+  const emit     = useSocketEmit();
+  const toast    = useToast();
 
   // ── Listen to room events ─────────────────────────────────────────────────
   useSocketEvent<{ room: Room }>("room:joined", ({ room }) => {
@@ -60,11 +68,11 @@ export function useRoom() {
   );
 
   useSocketEvent<{
-    userId: string;
+    userId:  string;
     newHost: string | null;
     kicked?: boolean;
   }>("room:player_left", ({ userId, newHost, kicked }) => {
-    const room = useRoomStore.getState().currentRoom;
+    const room   = useRoomStore.getState().currentRoom;
     const player = room?.players.find((p) => p.userId === userId);
     if (player && userId !== user?.id) {
       toast.info(
@@ -88,9 +96,9 @@ export function useRoom() {
   });
 
   useSocketEvent<{
-    userId: string;
+    userId:      string;
     displayName: string;
-    isTyping: boolean;
+    isTyping:    boolean;
   }>("chat:typing", ({ userId, displayName, isTyping }) => {
     setTyping(userId, displayName, isTyping);
   });
@@ -101,15 +109,29 @@ export function useRoom() {
   });
 
   useSocketEvent<{
-    matchId: string;
-    gameId:  string;
-    startsIn:number;
-  }>("room:game_starting", ({ matchId, startsIn }) => {
+    matchId:  string;
+    gameId:   string;
+    startsIn: number;
+  }>("room:game_starting", ({ matchId, gameId, startsIn }) => {
+    // Store the matchId — LudoPage reads this to confirm a match is active
     setMatchId(matchId);
-    toast.success(
-      "Game starting!",
-      `Match begins in ${startsIn} seconds`
-    );
+
+    const route = GAME_ROUTES[gameId];
+
+    if (route) {
+      // Known multiplayer game — navigate to its game page
+      toast.success(
+        "Game starting!",
+        `Match begins in ${startsIn} seconds`
+      );
+      router.push(route);
+    } else {
+      // Fallback for any gameId we don't have a route for yet
+      toast.success(
+        "Game starting!",
+        `Match begins in ${startsIn} seconds`
+      );
+    }
   });
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -122,7 +144,7 @@ export function useRoom() {
           setRoom(res.room);
         }
         return res;
-      } catch (err) {
+      } catch {
         return { success: false, error: "Failed to create room" };
       } finally {
         setConnecting(false);
@@ -142,7 +164,7 @@ export function useRoom() {
           setRoom(res.room);
         }
         return res;
-      } catch (err) {
+      } catch {
         return { success: false, error: "Failed to join room" };
       } finally {
         setConnecting(false);

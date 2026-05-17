@@ -1,3 +1,5 @@
+import { randomInt } from "crypto";
+
 // ── Strategy Ludo Game Engine ─────────────────────────────────────────────────
 // Full deterministic game logic. Server is authoritative.
 
@@ -78,6 +80,43 @@ const COLOR_HOME_ENTRY: Record<LudoColor, number> = {
 };
 
 const SAFE_CELLS = new Set([1, 9, 14, 22, 27, 35, 40, 48]);
+
+// ── Dice RNG with anti-streak guard ───────────────────────────────────────────
+// Per-player rolling history (last 3 values). If all 3 are identical,
+// the next roll for that player excludes that value to prevent visible streaks.
+const rollHistory = new Map<string, number[]>();
+
+function rollDiceFor(userId: string): number {
+  const history = rollHistory.get(userId) ?? [];
+
+  // Check for streak: last 3 rolls all the same
+  const streakValue =
+    history.length >= 3 &&
+    history[history.length - 1] === history[history.length - 2] &&
+    history[history.length - 2] === history[history.length - 3]
+      ? history[history.length - 1]
+      : null;
+
+  let value: number;
+
+  if (streakValue !== null) {
+    // Pick from {1..6} excluding the streak value — 5 possibilities
+    const pool = [1, 2, 3, 4, 5, 6].filter((v) => v !== streakValue);
+    value = pool[randomInt(0, pool.length)];
+  } else {
+    value = randomInt(1, 7); // 1..6 inclusive
+  }
+
+  // Update history (keep last 3)
+  const next = [...history, value].slice(-3);
+  rollHistory.set(userId, next);
+
+  return value;
+}
+
+function clearRollHistory(userId: string): void {
+  rollHistory.delete(userId);
+}
 
 // ── Engine ────────────────────────────────────────────────────────────────────
 export class LudoEngine {
@@ -172,7 +211,7 @@ export class LudoEngine {
       }
     }
 
-    const value = Math.floor(Math.random() * 6) + 1;
+    const value = rollDiceFor(userId);
     const canMove = this.getMovablePieces(userId, value).map((p) => p.id);
 
     const roll: DiceRoll = {
@@ -407,7 +446,7 @@ export class LudoEngine {
 
     // Auto-roll if not rolled yet
     if (!this.state.lastRoll) {
-      const value   = Math.floor(Math.random() * 6) + 1;
+      const value   = rollDiceFor(this.state.currentTurn);
       const canMove = this.getMovablePieces(
         this.state.currentTurn,
         value
@@ -501,5 +540,13 @@ export function getLudoGame(roomCode: string): LudoEngine | null {
 }
 
 export function destroyLudoGame(roomCode: string): void {
+  const game = activeGames.get(roomCode);
+  if (game) {
+    // Clear roll history for all players in this game
+    const state = game.getState();
+    for (const player of state.players) {
+      clearRollHistory(player.userId);
+    }
+  }
   activeGames.delete(roomCode);
 }

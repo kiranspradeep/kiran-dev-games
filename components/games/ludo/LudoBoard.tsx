@@ -12,8 +12,8 @@ interface LudoBoardProps {
   lastCaptured:  string | null;
 }
 
-// ── Board layout constants ────────────────────────────────────────────────────
-const CELL = 48;
+// ── Grid constants ────────────────────────────────────────────────────────────
+const CELL = 40;
 const COLS = 15;
 const ROWS = 15;
 const W    = CELL * COLS;
@@ -26,55 +26,135 @@ const COLOR_HEX: Record<LudoColor, string> = {
   BLUE:   "#3b82f6",
 };
 
-// Home base positions [col, row] for each color
+// ── Home base piece positions (2x2 inside each color's quadrant) ──────────────
+// Each color owns a 6x6 quadrant. Pieces sit in inner 2x2 cells.
 const HOME_POSITIONS: Record<LudoColor, [number, number][]> = {
-  RED:    [[1,1],[2,1],[1,2],[2,2]],
-  GREEN:  [[12,1],[13,1],[12,2],[13,2]],
-  YELLOW: [[12,12],[13,12],[12,13],[13,13]],
-  BLUE:   [[1,12],[2,12],[1,13],[2,13]],
+  // Top-left quadrant
+  RED:    [[2, 2], [3, 2], [2, 3], [3, 3]],
+  // Top-right quadrant
+  GREEN:  [[11, 2], [12, 2], [11, 3], [12, 3]],
+  // Bottom-right quadrant
+  YELLOW: [[11, 11], [12, 11], [11, 12], [12, 12]],
+  // Bottom-left quadrant
+  BLUE:   [[2, 11], [3, 11], [2, 12], [3, 12]],
 };
 
-// ── Build the 52-cell track as explicit tuples ────────────────────────────────
-function buildTrack(): [number, number][] {
-  const track: [number, number][] = [];
+// ── The canonical 52-cell main track ──────────────────────────────────────────
+// Indexed 1..52 (slot 0 unused). cell number → [col, row].
+// Cell 1 = RED start. Walks clockwise through all four arms.
+const TRACK: ([number, number] | null)[] = [
+  null,           // 0 — unused (positions are 1-indexed)
+  [1, 6],   // 1   RED START
+  [2, 6],   // 2
+  [3, 6],   // 3
+  [4, 6],   // 4
+  [5, 6],   // 5
+  [6, 5],   // 6
+  [6, 4],   // 7
+  [6, 3],   // 8
+  [6, 2],   // 9
+  [6, 1],   // 10
+  [6, 0],   // 11
+  [7, 0],   // 12  GREEN HOME ENTRY
+  [8, 0],   // 13
+  [8, 1],   // 14  GREEN START
+  [8, 2],   // 15
+  [8, 3],   // 16
+  [8, 4],   // 17
+  [8, 5],   // 18
+  [9, 6],   // 19
+  [10, 6],  // 20
+  [11, 6],  // 21
+  [12, 6],  // 22
+  [13, 6],  // 23
+  [14, 6],  // 24
+  [14, 7],  // 25  YELLOW HOME ENTRY
+  [14, 8],  // 26
+  [13, 8],  // 27  YELLOW START
+  [12, 8],  // 28
+  [11, 8],  // 29
+  [10, 8],  // 30
+  [9, 8],   // 31
+  [8, 9],   // 32
+  [8, 10],  // 33
+  [8, 11],  // 34
+  [8, 12],  // 35
+  [8, 13],  // 36
+  [8, 14],  // 37
+  [7, 14],  // 38  BLUE HOME ENTRY
+  [6, 14],  // 39
+  [6, 13],  // 40  BLUE START
+  [6, 12],  // 41
+  [6, 11],  // 42
+  [6, 10],  // 43
+  [6, 9],   // 44
+  [5, 8],   // 45
+  [4, 8],   // 46
+  [3, 8],   // 47
+  [2, 8],   // 48
+  [1, 8],   // 49
+  [0, 8],   // 50
+  [0, 7],   // 51  RED HOME ENTRY
+  [0, 6],   // 52
+];
 
-  // Segment helpers — explicit tuple push
-  const add = (c: number, r: number) => track.push([c, r]);
+// ── Home columns (positions 52..56) — 5 cells leading to center ───────────────
+const HOME_COLUMNS: Record<LudoColor, [number, number][]> = {
+  RED:    [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]],
+  GREEN:  [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]],
+  YELLOW: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]],
+  BLUE:   [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]],
+};
 
-  // Left column going up: col 6, rows 14→9
-  for (let r = 14; r >= 9; r--) add(6, r);
+// ── Finish position (position 57) for finished pieces (small offset per color) ─
+const FINISH_OFFSETS: Record<LudoColor, [number, number]> = {
+  RED:    [-0.3, -0.3],
+  GREEN:  [ 0.3, -0.3],
+  YELLOW: [ 0.3,  0.3],
+  BLUE:   [-0.3,  0.3],
+};
 
-  // Top-left row going right: row 8, cols 6→8
-  for (let c = 6; c <= 8; c++) add(c, 8);
+// ── Safe cells (matches backend SAFE_CELLS) ──────────────────────────────────
+const SAFE_CELLS = new Set([1, 9, 14, 22, 27, 35, 40, 48]);
 
-  // Wait — this would make a loop. Use the classic Ludo path:
-  // Segment 1: col 6, rows 14 down to 9
-  // Segment 2: row 8, cols 1 to 5 (left arm)
-  // ...
-  // For now, generate a simple clockwise ring of 52 cells:
-
-  // Top edge going right: row 6, cols 1→13
-  for (let c = 1; c <= 13; c++) add(c, 6);
-  // Right edge going down: col 13, rows 7→13
-  for (let r = 7; r <= 13; r++) add(13, r);
-  // Bottom edge going left: row 13, cols 12→1
-  for (let c = 12; c >= 1; c--) add(c, 13);
-  // Left edge going up: col 1, rows 12→7
-  for (let r = 12; r >= 7; r--) add(1, r);
-
-  // Trim or pad to exactly 52
-  return track.slice(0, 52);
+// ── Get pixel center for a given grid cell ───────────────────────────────────
+function gridToPixel(col: number, row: number): [number, number] {
+  return [col * CELL + CELL / 2, row * CELL + CELL / 2];
 }
 
-const TRACK = buildTrack();
+// ── Resolve piece pixel position based on its state/position/cell ────────────
+function getPiecePixel(
+  piece: { state: string; position: number; cell: number; index: number; color: LudoColor }
+): [number, number] | null {
+  // FINISHED — draw inside center
+  if (piece.state === "FINISHED" || piece.position >= 57) {
+    const [ox, oy] = FINISH_OFFSETS[piece.color];
+    return gridToPixel(7 + ox, 7 + oy);
+  }
 
-// Color-specific start positions on the track (0-indexed)
-const COLOR_START_INDEX: Record<LudoColor, number> = {
-  RED:    0,
-  GREEN:  13,
-  YELLOW: 26,
-  BLUE:   39,
-};
+  // HOME — sitting in the color's home base
+  if (piece.state === "HOME" || piece.position === 0) {
+    const slot = HOME_POSITIONS[piece.color][piece.index];
+    return gridToPixel(slot[0], slot[1]);
+  }
+
+  // ACTIVE on main track (positions 1..51) — use backend's cell number directly
+  if (piece.position >= 1 && piece.position <= 51) {
+    const coord = TRACK[piece.cell];
+    if (!coord) return null;
+    return gridToPixel(coord[0], coord[1]);
+  }
+
+  // ACTIVE in home column (positions 52..56)
+  if (piece.position >= 52 && piece.position <= 56) {
+    const idx = piece.position - 52; // 0..4
+    const slot = HOME_COLUMNS[piece.color][idx];
+    if (!slot) return null;
+    return gridToPixel(slot[0], slot[1]);
+  }
+
+  return null;
+}
 
 export default function LudoBoard({
   players,
@@ -101,152 +181,179 @@ export default function LudoBoard({
     ctx.fillStyle = "#0e0e1a";
     ctx.fillRect(0, 0, W, H);
 
-    // ── Draw board grid ─────────────────────────────────────────────────────
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const x = c * CELL;
-        const y = r * CELL;
+    // ── Draw the 4 home-base quadrants (6x6 colored squares) ────────────────
+    const QUADS: Array<{ color: LudoColor; x: number; y: number }> = [
+      { color: "RED",    x: 0, y: 0 },
+      { color: "GREEN",  x: 9, y: 0 },
+      { color: "YELLOW", x: 9, y: 9 },
+      { color: "BLUE",   x: 0, y: 9 },
+    ];
 
-        let fill = "rgba(255,255,255,0.03)";
+    for (const q of QUADS) {
+      // Outer block
+      ctx.fillStyle = `${COLOR_HEX[q.color]}1f`;
+      ctx.fillRect(q.x * CELL, q.y * CELL, 6 * CELL, 6 * CELL);
 
-        // Color home zones
-        if (c < 6 && r < 6)        fill = `${COLOR_HEX.RED}22`;
-        else if (c > 8 && r < 6)   fill = `${COLOR_HEX.GREEN}22`;
-        else if (c > 8 && r > 8)   fill = `${COLOR_HEX.YELLOW}22`;
-        else if (c < 6 && r > 8)   fill = `${COLOR_HEX.BLUE}22`;
-        // Home columns
-        else if (c === 7 && r > 0 && r < 6)  fill = `${COLOR_HEX.RED}33`;
-        else if (c > 8 && c < 14 && r === 7) fill = `${COLOR_HEX.GREEN}33`;
-        else if (c === 7 && r > 8 && r < 14) fill = `${COLOR_HEX.YELLOW}33`;
-        else if (c < 6 && c > 0 && r === 7)  fill = `${COLOR_HEX.BLUE}33`;
+      // Outer border
+      ctx.strokeStyle = `${COLOR_HEX[q.color]}55`;
+      ctx.lineWidth   = 2;
+      ctx.strokeRect(q.x * CELL + 1, q.y * CELL + 1, 6 * CELL - 2, 6 * CELL - 2);
 
-        ctx.fillStyle = fill;
-        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+      // Inner "garage" (4x4 inside)
+      ctx.fillStyle = "rgba(15,15,25,0.7)";
+      ctx.fillRect(
+        (q.x + 1) * CELL,
+        (q.y + 1) * CELL,
+        4 * CELL,
+        4 * CELL
+      );
+    }
 
-        ctx.strokeStyle = "rgba(255,255,255,0.04)";
-        ctx.lineWidth   = 0.5;
-        ctx.strokeRect(x + 1, y + 1, CELL - 2, CELL - 2);
+    // ── Draw all main-track cells (faint grid) ──────────────────────────────
+    for (let i = 1; i <= 52; i++) {
+      const coord = TRACK[i];
+      if (!coord) continue;
+      const [c, r] = coord;
+      const x = c * CELL;
+      const y = r * CELL;
+
+      ctx.fillStyle = "rgba(255,255,255,0.04)";
+      ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth   = 1;
+      ctx.strokeRect(x + 1, y + 1, CELL - 2, CELL - 2);
+    }
+
+    // ── Color the START cell of each color ──────────────────────────────────
+    const STARTS: Array<{ color: LudoColor; cell: number }> = [
+      { color: "RED",    cell: 1 },
+      { color: "GREEN",  cell: 14 },
+      { color: "YELLOW", cell: 27 },
+      { color: "BLUE",   cell: 40 },
+    ];
+
+    for (const s of STARTS) {
+      const coord = TRACK[s.cell];
+      if (!coord) continue;
+      const [c, r] = coord;
+      ctx.fillStyle = `${COLOR_HEX[s.color]}55`;
+      ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+    }
+
+    // ── Draw home columns (colored path to center) ──────────────────────────
+    const colors: LudoColor[] = ["RED", "GREEN", "YELLOW", "BLUE"];
+    for (const color of colors) {
+      for (const [c, r] of HOME_COLUMNS[color]) {
+        ctx.fillStyle = `${COLOR_HEX[color]}66`;
+        ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+
+        ctx.strokeStyle = `${COLOR_HEX[color]}99`;
+        ctx.lineWidth   = 1;
+        ctx.strokeRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
       }
     }
 
-    // ── Center finish area ──────────────────────────────────────────────────
-    ctx.fillStyle = "rgba(255,255,255,0.06)";
-    ctx.fillRect(6 * CELL + 1, 6 * CELL + 1, 3 * CELL - 2, 3 * CELL - 2);
+    // ── Draw safe-cell stars ────────────────────────────────────────────────
+    for (const cellNum of SAFE_CELLS) {
+      const coord = TRACK[cellNum];
+      if (!coord) continue;
+      const [c, r] = coord;
+      const [cx, cy] = gridToPixel(c, r);
 
-    // Draw finish triangles
-    const cx = 7.5 * CELL;
-    const cy = 7.5 * CELL;
-    const tr = CELL * 1.4;
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, CELL * 0.28, 0, Math.PI * 2);
+      ctx.fill();
 
-    const finishTriangles: Array<{
-      color: LudoColor;
-      pts:   [[number, number], [number, number], [number, number]];
-    }> = [
-      {
-        color: "RED",
-        pts:   [[cx - tr, cy - tr], [cx + tr, cy - tr], [cx, cy]],
-      },
-      {
-        color: "GREEN",
-        pts:   [[cx + tr, cy - tr], [cx + tr, cy + tr], [cx, cy]],
-      },
-      {
-        color: "YELLOW",
-        pts:   [[cx + tr, cy + tr], [cx - tr, cy + tr], [cx, cy]],
-      },
-      {
-        color: "BLUE",
-        pts:   [[cx - tr, cy + tr], [cx - tr, cy - tr], [cx, cy]],
-      },
+      ctx.fillStyle    = "rgba(255,255,255,0.55)";
+      ctx.font         = `${CELL * 0.32}px sans-serif`;
+      ctx.textAlign    = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("★", cx, cy);
+    }
+
+    // ── Center 3x3 finish area ──────────────────────────────────────────────
+    const cx0 = 6 * CELL;
+    const cy0 = 6 * CELL;
+    const cw  = 3 * CELL;
+
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    ctx.fillRect(cx0, cy0, cw, cw);
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.lineWidth   = 1.5;
+    ctx.strokeRect(cx0 + 1, cy0 + 1, cw - 2, cw - 2);
+
+    // Four center triangles meeting at the middle
+    const mx = cx0 + cw / 2;
+    const my = cy0 + cw / 2;
+
+    const triangles: Array<{ color: LudoColor; pts: [number, number][] }> = [
+      // Top triangle → GREEN
+      { color: "GREEN",  pts: [[cx0, cy0],        [cx0 + cw, cy0],         [mx, my]] },
+      // Right triangle → YELLOW
+      { color: "YELLOW", pts: [[cx0 + cw, cy0],   [cx0 + cw, cy0 + cw],    [mx, my]] },
+      // Bottom triangle → BLUE
+      { color: "BLUE",   pts: [[cx0 + cw, cy0 + cw], [cx0, cy0 + cw],      [mx, my]] },
+      // Left triangle → RED
+      { color: "RED",    pts: [[cx0, cy0 + cw],   [cx0, cy0],              [mx, my]] },
     ];
 
-    for (const tri of finishTriangles) {
-      ctx.fillStyle = `${COLOR_HEX[tri.color]}44`;
+    for (const tri of triangles) {
+      ctx.fillStyle = `${COLOR_HEX[tri.color]}88`;
       ctx.beginPath();
       ctx.moveTo(tri.pts[0][0], tri.pts[0][1]);
       ctx.lineTo(tri.pts[1][0], tri.pts[1][1]);
       ctx.lineTo(tri.pts[2][0], tri.pts[2][1]);
       ctx.closePath();
       ctx.fill();
+
+      ctx.strokeStyle = "rgba(0,0,0,0.4)";
+      ctx.lineWidth   = 1;
+      ctx.stroke();
     }
 
-    // ── Draw home bases ─────────────────────────────────────────────────────
-    const colors: LudoColor[] = ["RED", "GREEN", "YELLOW", "BLUE"];
+    // ── Draw home-base piece sockets ────────────────────────────────────────
     for (const color of colors) {
       for (const [col, row] of HOME_POSITIONS[color]) {
-        const x = col * CELL;
-        const y = row * CELL;
+        const [px, py] = gridToPixel(col, row);
 
-        ctx.fillStyle = `${COLOR_HEX[color]}55`;
+        ctx.fillStyle = `${COLOR_HEX[color]}40`;
         ctx.beginPath();
-        ctx.arc(x + CELL / 2, y + CELL / 2, CELL * 0.38, 0, Math.PI * 2);
+        ctx.arc(px, py, CELL * 0.36, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = `${COLOR_HEX[color]}88`;
+        ctx.strokeStyle = `${COLOR_HEX[color]}aa`;
         ctx.lineWidth   = 1.5;
         ctx.stroke();
       }
     }
 
-    // ── Draw safe cell markers on track ─────────────────────────────────────
-    const SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
-    for (const idx of SAFE_INDICES) {
-      const cell = TRACK[idx];
-      if (!cell) continue;
-      const [col, row] = cell;
-      const x = col * CELL + CELL / 2;
-      const y = row * CELL + CELL / 2;
-
-      ctx.fillStyle = "rgba(255,255,255,0.1)";
-      ctx.beginPath();
-      ctx.arc(x, y, CELL * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle    = "rgba(255,255,255,0.4)";
-      ctx.font         = `${CELL * 0.3}px sans-serif`;
-      ctx.textAlign    = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("★", x, y);
-    }
-
-    // ── Draw pieces ──────────────────────────────────────────────────────────
+    // ── Draw all pieces ──────────────────────────────────────────────────────
     for (const player of players) {
-      const { color, pieces } = player;
-      const hex = COLOR_HEX[color];
+      for (const piece of player.pieces) {
+        const pixel = getPiecePixel({
+          state:    piece.state,
+          position: piece.position,
+          cell:     piece.cell,
+          index:    piece.index,
+          color:    player.color,
+        });
+        if (!pixel) continue;
 
-      for (const piece of pieces) {
-        const pieceId    = piece.id;
-        const isMovable  = canMovePieces.includes(pieceId);
-        const isSelected = selectedPiece === pieceId;
-        const wasCaptured = lastCaptured === pieceId;
+        const [px, py] = pixel;
+        const isMovable   = canMovePieces.includes(piece.id);
+        const isSelected  = selectedPiece === piece.id;
+        const wasCaptured = lastCaptured === piece.id;
+        const hex         = COLOR_HEX[player.color];
+        const pr          = CELL * 0.32;
 
-        let px: number;
-        let py: number;
-
-        if (piece.state === "HOME") {
-          const homePos = HOME_POSITIONS[color][piece.index];
-          px = homePos[0] * CELL + CELL / 2;
-          py = homePos[1] * CELL + CELL / 2;
-        } else if (piece.state === "ACTIVE" && piece.cell > 0) {
-          const startIdx  = COLOR_START_INDEX[color];
-          const trackIdx  = (startIdx + piece.position - 1) % 52;
-          const trackCell = TRACK[trackIdx];
-          if (!trackCell) continue;
-          px = trackCell[0] * CELL + CELL / 2;
-          py = trackCell[1] * CELL + CELL / 2;
-        } else {
-          continue; // FINISHED — skip (show in center later)
-        }
-
-        const pr = CELL * 0.35;
-
-        // Glow for movable/selected pieces
+        // Glow for movable / selected
         if (isMovable || isSelected) {
           ctx.shadowColor = hex;
-          ctx.shadowBlur  = isSelected ? 20 : 12;
+          ctx.shadowBlur  = isSelected ? 18 : 10;
         }
 
-        // Piece circle
         ctx.fillStyle = wasCaptured ? "#ffffff" : hex;
         ctx.beginPath();
         ctx.arc(px, py, pr, 0, Math.PI * 2);
@@ -254,27 +361,26 @@ export default function LudoBoard({
 
         ctx.shadowBlur = 0;
 
-        // Border
         ctx.strokeStyle = isSelected
           ? "#ffffff"
           : isMovable
-          ? "rgba(255,255,255,0.8)"
-          : "rgba(255,255,255,0.3)";
-        ctx.lineWidth   = isSelected ? 2.5 : 1.5;
+          ? "rgba(255,255,255,0.85)"
+          : "rgba(0,0,0,0.5)";
+        ctx.lineWidth = isSelected ? 2.5 : 1.5;
         ctx.beginPath();
         ctx.arc(px, py, pr, 0, Math.PI * 2);
         ctx.stroke();
 
         // Piece number
         ctx.fillStyle    = "#fff";
-        ctx.font         = `bold ${CELL * 0.28}px Inter, sans-serif`;
+        ctx.font         = `bold ${CELL * 0.3}px Inter, sans-serif`;
         ctx.textAlign    = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(piece.index + 1), px, py);
 
-        // Pulse ring for movable pieces
-        if (isMovable) {
-          ctx.strokeStyle = `${hex}66`;
+        // Dashed pulse ring for movable pieces
+        if (isMovable && !isSelected) {
+          ctx.strokeStyle = `${hex}aa`;
           ctx.lineWidth   = 2;
           ctx.setLineDash([3, 3]);
           ctx.beginPath();
@@ -304,25 +410,17 @@ export default function LudoBoard({
 
       for (const player of players) {
         for (const piece of player.pieces) {
-          let px: number;
-          let py: number;
+          const pixel = getPiecePixel({
+            state:    piece.state,
+            position: piece.position,
+            cell:     piece.cell,
+            index:    piece.index,
+            color:    player.color,
+          });
+          if (!pixel) continue;
 
-          if (piece.state === "HOME") {
-            const homePos = HOME_POSITIONS[player.color][piece.index];
-            px = homePos[0] * CELL + CELL / 2;
-            py = homePos[1] * CELL + CELL / 2;
-          } else if (piece.state === "ACTIVE" && piece.cell > 0) {
-            const startIdx  = COLOR_START_INDEX[player.color];
-            const trackIdx  = (startIdx + piece.position - 1) % 52;
-            const trackCell = TRACK[trackIdx];
-            if (!trackCell) continue;
-            px = trackCell[0] * CELL + CELL / 2;
-            py = trackCell[1] * CELL + CELL / 2;
-          } else {
-            continue;
-          }
-
-          const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+          const [px, py] = pixel;
+          const dist     = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
           if (dist <= CELL * 0.4) {
             onPieceClick(piece.id);
             return;

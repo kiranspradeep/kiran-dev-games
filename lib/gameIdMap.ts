@@ -57,5 +57,13 @@ export function toFrontendGameId(backendId: string): string {
   return entry?.[0] ?? backendId.toLowerCase();
 }
 
-export const LIVE_GAME_IDS = ["SNAKE", "PACMAN", "GAME_2048", "WORDLE"];
+// ── STRATEGY_LUDO added here ──────────────────────────────────────────────────
+export const LIVE_GAME_IDS = [
+  "SNAKE",
+  "PACMAN",
+  "GAME_2048",
+  "WORDLE",
+  "STRATEGY_LUDO",
+];
+
 export const ALL_GAME_IDS = Object.values(GAME_ID_MAP);
